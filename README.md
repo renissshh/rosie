@@ -32,6 +32,9 @@ ollama pull qwen3:8b      # once
 rosie chat                # /help, /tools, /reset, /exit
 ```
 
+Today she can tell the date and time and read notes from your Obsidian vault
+(set `user_vault_dir` in `config/rosie.yaml`): "what's in my DBMS note?".
+
 When Rosie wants to do something that needs your yes (see `config/permissions.yaml`),
 she asks `Allow? [y/N]` in the terminal; anything but `y` means no.
 

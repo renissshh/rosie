@@ -25,7 +25,7 @@ Status legend: `[x]` done, `[ ]` to do.
 - [x] Safety gate: enforce `config/permissions.yaml` (allow / ask / deny, fail closed) + tests. Decisions: docs/decisions/0001
 - [x] `config/SOUL.md` persona + system prompt builder
 - [x] Terminal chat (`rosie chat`) with conversation history
-- [ ] First tools: current time/date, read a note from the user vault
+- [x] First tools: current time/date, read a note from the user vault
 - [ ] Windows setup guide: install Python, Ollama, pull model, `D:\Rosie` **[needs you: run it after exams]**
 - [ ] Merge, tag v0.1, walkthrough doc
 

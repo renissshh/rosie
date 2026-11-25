@@ -24,10 +24,11 @@
 | `rosie.safety` | Safety gate: enforces `config/permissions.yaml` (allow / ask / deny), tier floor for external/system tools, fails closed. |
 | `rosie.prompt` | System prompt = `SOUL.md` persona + current IST time + available tools. `D:\Rosie\SOUL.md` overrides `config/SOUL.md`. |
 | `rosie.chat` | `rosie chat`: history kept per session (trimmed by whole turns), yes/no prompt for the gate, friendly message when Ollama is down. |
+| `rosie.builtin_tools` | `get_datetime` (IST clock) and `read_note` (user vault, read only, path-guarded, finds notes by name). |
 
 ## Invariants (each one has a test)
 
-1. Rosie never writes outside `rosie-vault`. (config overlap guard today; vault writer path guard in Sprint 2)
+1. Rosie never writes outside `rosie-vault`. (config overlap guard; `read_note` resolves paths and refuses anything outside the user vault; vault writer path guard in Sprint 2)
 2. Secrets never reach logs.
 3. The cloud model is only called when the local model fails.
 4. Denied actions never run, even if the model requests them directly; unknown actions and a broken policy file mean "ask".

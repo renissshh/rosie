@@ -15,7 +15,8 @@ from collections.abc import Mapping, Sequence
 from pathlib import Path
 
 from rosie import __version__
-from rosie.config import load_config, load_dotenv
+from rosie.builtin_tools import register_builtin_tools
+from rosie.config import RosieConfig, load_config, load_dotenv
 from rosie.tools import ToolRegistry
 
 
@@ -29,9 +30,11 @@ def find_config(arg: str | None, environ: Mapping[str, str] | None = None) -> Pa
     return default if default.is_file() else None
 
 
-def build_registry() -> ToolRegistry:
+def build_registry(config: RosieConfig) -> ToolRegistry:
     """All tools Rosie has today."""
-    return ToolRegistry()
+    registry = ToolRegistry()
+    register_builtin_tools(registry, config)
+    return registry
 
 
 def _parser() -> argparse.ArgumentParser:
@@ -53,7 +56,7 @@ def main(argv: Sequence[str] | None = None) -> int:
 
         load_dotenv(Path(".env"))
         config = load_config(find_config(args.config))
-        run_chat(build_session(config, build_registry()))
+        run_chat(build_session(config, build_registry(config)))
     return 0
 
 
