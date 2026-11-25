@@ -1,0 +1,36 @@
+# Rosie's action permissions. Decided by renissshh on 2026-11-25.
+# Read by the safety gate. See docs/decisions/0001-action-permissions.md.
+#
+#   allow  -> Rosie does it on her own
+#   ask    -> Rosie asks you every time and waits for a yes
+#   deny   -> Rosie never does it
+# Any action not listed here is "ask" by default.
+
+actions:
+  # Do freely
+  tasks.manage: allow          # add / update / complete tasks and reminders in rosie-vault
+  log.study: allow             # study sessions -> rosie-vault/study-log
+  log.training: allow          # workouts -> rosie-vault/training-log
+  log.review: allow            # daily brief / nightly review -> rosie-vault/daily
+  vault.user.read: allow       # read your own Obsidian vault (read only)
+  web.search: allow            # look things up
+  vault.rosie.delete: allow    # delete Rosie's own notes (recoverable from rosie-vault git history)
+
+  # Ask every time
+  calendar.write: ask          # create / change Google Calendar events
+  email.draft: ask
+  email.send: ask
+  message.others: ask          # Telegram or any message to anyone except you
+  pc.open_app: ask             # allowlisted apps only
+  pc.run_script: ask           # allowlisted scripts only
+
+  # Never
+  vault.user.write: deny       # your own vault is never changed
+  vault.user.delete: deny
+  payments: deny
+
+proactive:
+  # Rosie may contact you unprompted only for these:
+  allowed: [morning_brief, nightly_review, due_reminder]
+  # ...and stays silent during these schedule blocks (reminders wait until the block ends)
+  quiet_during: [college, study]

@@ -22,7 +22,7 @@ Status legend: `[x]` done, `[ ]` to do.
 - [x] LLM client: OpenAI-compatible, local Ollama first, free-tier fallback
 - [x] Tool registry (JSON-schema tools, typed handlers)
 - [ ] Agent loop with step cap and tool-call log
-- [ ] Safety gate: run / ask / block tiers + tests
+- [ ] Safety gate: enforce `config/permissions.yaml` (allow / ask / deny, fail closed) + tests. Decisions: docs/decisions/0001
 - [ ] `config/SOUL.md` persona + system prompt builder
 - [ ] Terminal chat (`rosie chat`) with conversation history
 - [ ] First tools: current time/date, read a note from the user vault
