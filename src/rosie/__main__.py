@@ -3,6 +3,9 @@
     rosie chat [--config PATH]    talk to Rosie in the terminal
     rosie doctor [--config PATH]  check the setup (Python, D:\\Rosie, Ollama, vault)
     rosie vault [--config PATH]   create rosie-vault's folders and sync it with git
+    rosie telegram [--config PATH] answer on Telegram (needs TELEGRAM_* in .env)
+    rosie brief [--config PATH]   print today's morning brief
+    rosie review [--config PATH]  nightly review: three questions in the terminal
     rosie --version
 
 Config file lookup: --config, then the ROSIE_CONFIG env var, then
@@ -13,16 +16,23 @@ from __future__ import annotations
 
 import argparse
 import os
-from collections.abc import Mapping, Sequence
+import threading
+from collections.abc import Callable, Mapping, Sequence
 from datetime import date
 from pathlib import Path
 
 from rosie import __version__
+from rosie.brief import MorningBrief, build_brief
 from rosie.builtin_tools import register_builtin_tools
 from rosie.config import RosieConfig, load_config, load_dotenv
 from rosie.context import ContextBuilder
+from rosie.llm import LLMError
 from rosie.memory import FactStore, register_memory_tools
+from rosie.notify import DesktopNotifier, Router
 from rosie.prompt import now_in
+from rosie.reminders import Reminders, register_reminder_tools
+from rosie.review import REVIEW_JOB, NightlyReview, run_in_terminal
+from rosie.scheduler import Scheduler
 from rosie.search import NoteIndex, register_search_tool
 from rosie.tasks import TaskStore, register_task_tools
 from rosie.tools import ToolRegistry
@@ -39,14 +49,49 @@ def find_config(arg: str | None, environ: Mapping[str, str] | None = None) -> Pa
     return default if default.is_file() else None
 
 
-def build_registry(config: RosieConfig) -> ToolRegistry:
-    """All tools Rosie has today."""
+def build_registry(config: RosieConfig, reminders: Reminders | None = None) -> ToolRegistry:
+    """All tools Rosie has today. Reminder tools need a running scheduler, so they're optional."""
     registry = ToolRegistry()
     register_builtin_tools(registry, config)
     register_memory_tools(registry, fact_store(config))
     register_task_tools(registry, task_store(config))
     register_search_tool(registry, note_index(config))
+    if reminders is not None:
+        register_reminder_tools(registry, reminders)
     return registry
+
+
+def desktop_or_none() -> DesktopNotifier | None:
+    """Windows toasts when on Windows; elsewhere notifications skip the desktop."""
+    desktop = DesktopNotifier()
+    return desktop if desktop.available else None
+
+
+def start_reminders(
+    config: RosieConfig, notify, on_review: Callable[[], None] | None = None
+) -> tuple[Reminders, threading.Event]:
+    """Scheduler thread with reminders, morning brief and nightly review. Set the event to stop.
+
+    `on_review` starts the review where it can be answered (Telegram); without it Rosie
+    just reminds you to run `rosie review`.
+    """
+    scheduler = Scheduler(config.data_dir / "index" / "scheduler.db", config.timezone)
+    reminders = Reminders(scheduler, notify, vault_writer(config), config.timezone)
+    MorningBrief(task_store(config), vault_writer(config), notify, reminders).schedule(
+        config.brief_time
+    )
+    scheduler.on(
+        REVIEW_JOB,
+        lambda job: (
+            on_review()
+            if on_review
+            else notify("Rosie", "Time for your nightly review: run `rosie review`.")
+        ),
+    )
+    scheduler.ensure_daily(REVIEW_JOB, config.review_time)
+    stop = threading.Event()
+    threading.Thread(target=scheduler.run_forever, args=(stop,), daemon=True).start()
+    return reminders, stop
 
 
 def note_index(config: RosieConfig) -> NoteIndex:
@@ -73,6 +118,48 @@ def fact_store(config: RosieConfig) -> FactStore:
     return FactStore(vault_writer(config), config.data_dir / "index" / "memory.db")
 
 
+def telegram_reply(text: str, review: NightlyReview, session) -> str:
+    """While the nightly review is running, messages are its answers; otherwise chat."""
+    if review.active:
+        return review.answer(text)
+    if text.strip().lower() in {"/review", "review"}:
+        return review.start()
+    try:
+        return session.ask(text).text
+    except LLMError:
+        return "I can't reach my brain right now (is Ollama running on the laptop?)."
+
+
+def run_telegram(config_arg: str | None, environ: Mapping[str, str] | None = None) -> int:
+    from rosie.chat import build_session
+    from rosie.telegram import TelegramError, bot_from_env
+
+    load_dotenv(Path(".env"))
+    config = load_config(find_config(config_arg))
+    try:
+        bot = bot_from_env(os.environ if environ is None else environ)
+    except TelegramError as exc:
+        print(f"Telegram is not set up: {exc}")
+        return 1
+    review = NightlyReview(task_store(config), vault_writer(config))
+    reminders, stop = start_reminders(
+        config, Router(desktop_or_none(), bot.notify), on_review=lambda: bot.send(review.start())
+    )
+    context = ContextBuilder(fact_store(config), task_store(config))
+    session = build_session(
+        config, build_registry(config, reminders), context=context.build, ask_user=bot.ask
+    )
+    bot.on_message = lambda text: telegram_reply(text, review, session)
+    print("Rosie is listening on Telegram. Ctrl+C to stop.")
+    try:
+        bot.run_forever(stop)
+    except KeyboardInterrupt:
+        pass
+    finally:
+        stop.set()
+    return 0
+
+
 def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="rosie", description="Rosie, your chief of staff.")
     parser.add_argument("--version", action="version", version=f"Rosie {__version__}")
@@ -83,6 +170,12 @@ def _parser() -> argparse.ArgumentParser:
     doctor.add_argument("--config", help="path to rosie.yaml")
     vault = sub.add_parser("vault", help="set up and sync rosie-vault")
     vault.add_argument("--config", help="path to rosie.yaml")
+    brief = sub.add_parser("brief", help="print today's morning brief")
+    brief.add_argument("--config", help="path to rosie.yaml")
+    review = sub.add_parser("review", help="nightly review in the terminal")
+    review.add_argument("--config", help="path to rosie.yaml")
+    telegram = sub.add_parser("telegram", help="answer on Telegram from your phone")
+    telegram.add_argument("--config", help="path to rosie.yaml")
     return parser
 
 
@@ -97,7 +190,13 @@ def main(argv: Sequence[str] | None = None) -> int:
         load_dotenv(Path(".env"))
         config = load_config(find_config(args.config))
         context = ContextBuilder(fact_store(config), task_store(config))
-        run_chat(build_session(config, build_registry(config), context=context.build))
+        terminal = lambda title, text: print(f"\n[{title}] {text}")  # noqa: E731
+        reminders, stop = start_reminders(config, Router(desktop_or_none(), terminal))
+        registry = build_registry(config, reminders)
+        try:
+            run_chat(build_session(config, registry, context=context.build))
+        finally:
+            stop.set()
     if args.command == "doctor":
         from rosie.doctor import report, run_checks
 
@@ -105,6 +204,15 @@ def main(argv: Sequence[str] | None = None) -> int:
         text, code = report(run_checks(load_config(find_config(args.config))))
         print(text)
         return code
+    if args.command == "brief":
+        print(build_brief(task_store(load_config(find_config(args.config)))), end="")
+        return 0
+    if args.command == "review":
+        config = load_config(find_config(args.config))
+        run_in_terminal(NightlyReview(task_store(config), vault_writer(config)), input, print)
+        return 0
+    if args.command == "telegram":
+        return run_telegram(args.config)
     if args.command == "vault":
         from rosie.vault import GitSync, ensure_layout
 

@@ -47,7 +47,8 @@ def test_line_round_trip_in_obsidian_tasks_format():
     task = Task("a1b2c3", "Revise DBMS", date(2026, 12, 12), "high")
     assert task.line() == "- [ ] Revise DBMS ⏫ 📅 2026-12-12 ^a1b2c3"
     assert parse_line(task.line()) == task
-    done = Task("0c4d5e", "Pay fee", None, None, True, date(2026, 11, 19))
+    done = Task("0c4d5e", "Pay fee", None, None, True, date(2026, 11, 19), date(2026, 11, 1))
+    assert done.line() == "- [x] Pay fee ➕ 2026-11-01 ✅ 2026-11-19 ^0c4d5e"
     assert parse_line(done.line()) == done
 
 
@@ -65,7 +66,7 @@ def test_add_and_list_most_urgent_first(store):
     store.add("Soon high", due="tomorrow", priority="high")
     titles = [t.title for t in store.open_tasks()]
     assert titles == ["Soon high", "Soon low", "Later", "No date task"]
-    assert text(store).startswith("# tasks\n\n- [ ] No date task ^")
+    assert text(store).startswith("# tasks\n\n- [ ] No date task ➕ 2026-11-26 ^")
 
 
 def test_complete(store):

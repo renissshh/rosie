@@ -1,6 +1,6 @@
-# Architecture (v0.2, updated each sprint)
+# Architecture (v0.3, updated each sprint)
 
-Tours: [v0.1 one message end to end](WALKTHROUGH-v0.1.md), [v0.2 memory, tasks, search](WALKTHROUGH-v0.2.md).
+Tours: [v0.1 one message end to end](WALKTHROUGH-v0.1.md), [v0.2 memory, tasks, search](WALKTHROUGH-v0.2.md), [v0.3 reminders, brief, review, Telegram](WALKTHROUGH-v0.3.md).
 
 ```
  Laptop: orb + voice        LLM API (Ollama local / free-tier cloud)        Phone: Telegram
@@ -34,6 +34,12 @@ Tours: [v0.1 one message end to end](WALKTHROUGH-v0.1.md), [v0.2 memory, tasks, 
 | `rosie.tasks` | Tasks in `tasks/tasks.md`, Obsidian Tasks format (⏫🔼🔽 priority, 📅 due, ✅ done); due dates like "friday" or "in 3 days"; add / list / complete tools. |
 | `rosie.search` | FTS5 index of both vaults in `D:\Rosie\index\notes.db`, refreshed incrementally by size/mtime; `search_notes` tool with snippets. |
 | `rosie.context` | Before each reply: facts matching the message (max 5) + tasks due today/overdue go into the system prompt; failures only drop the context. |
+| `rosie.scheduler` | Jobs in SQLite (once, daily, weekly, every N min), IST recurrence, missed runs merged, crash-isolated handlers. See decision 0002. |
+| `rosie.reminders` | One-off and repeating reminders ("tomorrow 7am", "weekdays"); fire, one follow-up after 15 min, then "skipped" goes to today's daily note; done / snooze / cancel. |
+| `rosie.telegram` | Bot API over HTTPS long polling (no open port), one allowlisted chat, yes/no questions in the chat, reminders delivered there; errors never include the token. |
+| `rosie.notify` | Windows toast (built-in PowerShell + WinRT, text via env vars) when you're at the laptop, Telegram when idle > 5 min, each the other's fallback. |
+| `rosie.brief` | Morning brief at `brief_time`: Top 3, today's reminders, overdue, one avoided task (open 3+ days); written to the daily note, short version notified. `rosie brief` prints it. |
+| `rosie.review` | Nightly review at `review_time`: 3 questions (Telegram or `rosie review`), answers + completed tasks to today's note, tomorrow's top 3 drafted as tasks and a "Draft plan" in tomorrow's note. |
 
 ## Invariants (each one has a test)
 

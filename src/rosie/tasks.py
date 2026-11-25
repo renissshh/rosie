@@ -3,7 +3,7 @@
     - [ ] Revise DBMS normal forms ⏫ 📅 2026-12-12 ^a1b2c3
     - [x] Pay hostel fee 📅 2026-11-20 ✅ 2026-11-19 ^0c4d5e
 
-⏫ high, 🔼 medium, 🔽 low priority; 📅 due date; ✅ date completed; ^id an
+⏫ high, 🔼 medium, 🔽 low priority; 📅 due date; ➕ created; ✅ completed; ^id an
 Obsidian block id. So the same file works in Obsidian (with or without that
 plugin) and for Rosie. Lines without an id still count (id derived from text).
 """
@@ -30,6 +30,7 @@ _RANK = {"high": 0, "medium": 1, None: 2, "low": 3}
 _LINE = re.compile(r"^- \[(?P<done>[ xX])\] (?P<body>.*?)(?: \^(?P<id>[0-9a-f]{6}))?\s*$")
 _DUE = re.compile(r"\s*📅\s*(\d{4}-\d{2}-\d{2})")
 _DONE = re.compile(r"\s*✅\s*(\d{4}-\d{2}-\d{2})")
+_CREATED = re.compile(r"\s*➕\s*(\d{4}-\d{2}-\d{2})")
 _PRIO = re.compile(r"\s*([⏫🔼🔽])")
 _WEEKDAYS = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
 
@@ -46,6 +47,7 @@ class Task:
     priority: Priority | None = None
     done: bool = False
     done_on: date | None = None  # empty if ticked by hand in Obsidian without a date
+    created: date | None = None  # lets the morning brief spot tasks being avoided
 
     def line(self) -> str:
         parts = [f"- [{'x' if self.done else ' '}] {self.title}"]
@@ -53,6 +55,8 @@ class Task:
             parts.append(PRIORITY_EMOJI[self.priority])
         if self.due:
             parts.append(f"📅 {self.due.isoformat()}")
+        if self.created:
+            parts.append(f"➕ {self.created.isoformat()}")
         if self.done_on:
             parts.append(f"✅ {self.done_on.isoformat()}")
         parts.append(f"^{self.id}")
@@ -98,7 +102,10 @@ def parse_line(line: str) -> Task | None:
     due = _DUE.search(body)
     done = _DONE.search(body)
     prio = _PRIO.search(body)
-    title = _PRIO.sub("", _DONE.sub("", _DUE.sub("", body))).strip()
+    created = _CREATED.search(body)
+    for pattern in (_DUE, _DONE, _CREATED, _PRIO):
+        body = pattern.sub("", body)
+    title = body.strip()
     return Task(
         id=m["id"] or hashlib.sha1(title.encode()).hexdigest()[:6],
         title=title,
@@ -106,6 +113,7 @@ def parse_line(line: str) -> Task | None:
         priority=_EMOJI_PRIORITY.get(prio[1]) if prio else None,  # type: ignore[arg-type]
         done=m["done"] in "xX",
         done_on=date.fromisoformat(done[1]) if done else None,
+        created=date.fromisoformat(created[1]) if created else None,
     )
 
 
@@ -137,7 +145,8 @@ class TaskStore:
         new_id = secrets.token_hex(3)
         while new_id in taken:
             new_id = secrets.token_hex(3)
-        task = Task(new_id, title, parse_due(due, self.today()) if due else None, priority)
+        due_date = parse_due(due, self.today()) if due else None
+        task = Task(new_id, title, due_date, priority, created=self.today())
         lines = self._lines() or ["# tasks", ""]
         lines.append(task.line())
         self.writer.write(TASKS_FILE, "\n".join(lines) + "\n")

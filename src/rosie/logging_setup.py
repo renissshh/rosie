@@ -12,7 +12,8 @@ from logging.handlers import RotatingFileHandler
 from pathlib import Path
 
 _SECRET_PATTERNS = [
-    re.compile(r"\b\d{6,12}:[A-Za-z0-9_-]{30,}\b"),  # Telegram bot token
+    # Telegram bot token; no \b at the start, so it is also caught inside URLs (".../bot123:ABC")
+    re.compile(r"(?<!\d)\d{6,12}:[A-Za-z0-9_-]{30,}"),
     re.compile(r"\bAIza[0-9A-Za-z_-]{30,}\b"),  # Google API key
     re.compile(r"\bsk-[A-Za-z0-9_-]{20,}\b"),  # OpenAI-style key
     re.compile(r"(?i)(bearer\s+)[A-Za-z0-9._-]{16,}"),

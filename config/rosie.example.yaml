@@ -25,3 +25,9 @@ llm:
 #   api_key_env: "GEMINI_API_KEY"
 
 max_agent_steps: 8
+
+# Morning brief time (local). Written to rosie-vault/daily and sent as a notification.
+brief_time: "07:30"
+
+# Nightly review: 3 questions on Telegram (or a nudge to run `rosie review`).
+review_time: "22:00"

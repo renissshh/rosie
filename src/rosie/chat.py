@@ -128,14 +128,18 @@ def build_session(
     read: Reader = input,
     write: Writer = print,
     context: Callable[[str], str] | None = None,
+    ask_user: Callable[[str], bool] | None = None,
 ) -> ChatSession:
-    """Wire the real pieces together: local-first LLM, safety gate, tool log, persona."""
+    """Wire the real pieces together: local-first LLM, safety gate, tool log, persona.
+
+    `ask_user` replaces the terminal yes/no prompt (Telegram asks in the chat instead).
+    """
     setup_logging(config.logs_dir, console_level=logging.WARNING)
     agent = Agent(
         build_llm(config.llm, config.fallback_llm),
         registry,
         max_steps=config.max_agent_steps,
-        gate=SafetyGate(PermissionPolicy.load(), make_asker(read, write)),
+        gate=SafetyGate(PermissionPolicy.load(), ask_user or make_asker(read, write)),
         call_log=ToolCallLog(config.logs_dir / "tool_calls.jsonl"),
     )
     return ChatSession(agent, load_soul(config.data_dir), config.timezone, context=context)

@@ -6,7 +6,7 @@ Rosie is a personal AI chief of staff that lives on a Windows laptop as a floati
 answers on Telegram from the phone, and keeps her own second brain in a separate
 Obsidian vault. Say "Hey Rosie" and she tells you what matters today.
 
-> Status: **v0.2 "she remembers"** ([walkthrough](docs/WALKTHROUGH-v0.2.md)). Sprint 3 of 6 next. See [docs/PLAN.md](docs/PLAN.md).
+> Status: **v0.3 "daily-usable"** ([walkthrough](docs/WALKTHROUGH-v0.3.md)). Sprint 4 (voice) next. See [docs/PLAN.md](docs/PLAN.md).
 
 ## What she will do (v1.0)
 
@@ -36,7 +36,9 @@ rosie chat                # /help, /tools, /reset, /exit
 
 Today she can tell the time, read and search your Obsidian vault (set `user_vault_dir` in
 `config/rosie.yaml`), remember facts and manage tasks in her own vault (`rosie vault` sets
-it up). Try: "what's in my DBMS note?", "add revise DBMS for friday".
+it up), set reminders, and send a morning brief and nightly review (`rosie brief`,
+`rosie review`, or on Telegram with `rosie telegram`). Try: "what's in my DBMS note?",
+"add revise DBMS for friday", "remind me at 9pm to call mom".
 
 When Rosie wants to do something that needs your yes (see `config/permissions.yaml`),
 she asks `Allow? [y/N]` in the terminal; anything but `y` means no.

@@ -40,3 +40,8 @@ def test_console_can_be_quieter_than_file(tmp_path):
     assert console.level == logging.WARNING
     assert file_handler.level == logging.NOTSET  # file keeps everything at INFO and up
     logger.handlers.clear()
+
+
+def test_masks_telegram_token_inside_api_url():
+    url = f"https://api.telegram.org/bot{TELEGRAM}/getUpdates"
+    assert mask_secrets(url) == "https://api.telegram.org/bot***/getUpdates"
