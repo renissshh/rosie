@@ -26,6 +26,7 @@ from rosie.brief import MorningBrief, build_brief
 from rosie.builtin_tools import register_builtin_tools
 from rosie.config import RosieConfig, load_config, load_dotenv
 from rosie.context import ContextBuilder
+from rosie.llm import LLMError
 from rosie.memory import FactStore, register_memory_tools
 from rosie.notify import DesktopNotifier, Router
 from rosie.prompt import now_in
@@ -123,7 +124,10 @@ def telegram_reply(text: str, review: NightlyReview, session) -> str:
         return review.answer(text)
     if text.strip().lower() in {"/review", "review"}:
         return review.start()
-    return session.ask(text).text
+    try:
+        return session.ask(text).text
+    except LLMError:
+        return "I can't reach my brain right now (is Ollama running on the laptop?)."
 
 
 def run_telegram(config_arg: str | None, environ: Mapping[str, str] | None = None) -> int:

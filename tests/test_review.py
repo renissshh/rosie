@@ -4,6 +4,7 @@ import pytest
 
 from rosie.__main__ import start_reminders, telegram_reply
 from rosie.config import RosieConfig
+from rosie.llm import LLMError
 from rosie.review import QUESTIONS, REVIEW_JOB, NightlyReview, run_in_terminal, split_items
 from rosie.tasks import TaskStore
 from rosie.vault_writer import VaultWriter
@@ -119,3 +120,11 @@ def test_review_without_remote_just_nudges(tmp_path):
     stop.set()
     reminders.scheduler.handlers[REVIEW_JOB](None)
     assert "rosie review" in sent[-1]
+
+
+def test_telegram_reply_when_ollama_is_down(review):
+    class DeadSession:
+        def ask(self, text):
+            raise LLMError("ollama unreachable")
+
+    assert "Ollama" in telegram_reply("hi", review, DeadSession())
