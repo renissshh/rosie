@@ -23,6 +23,7 @@
 | `rosie.agent` | Agent loop: LLM -> tools -> LLM, step cap (`max_agent_steps`), gate before every call, JSON-lines tool-call log. |
 | `rosie.safety` | Safety gate: enforces `config/permissions.yaml` (allow / ask / deny), tier floor for external/system tools, fails closed. |
 | `rosie.prompt` | System prompt = `SOUL.md` persona + current IST time + available tools. `D:\Rosie\SOUL.md` overrides `config/SOUL.md`. |
+| `rosie.chat` | `rosie chat`: history kept per session (trimmed by whole turns), yes/no prompt for the gate, friendly message when Ollama is down. |
 
 ## Invariants (each one has a test)
 

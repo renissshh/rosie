@@ -25,6 +25,16 @@ Obsidian vault. Say "Hey Rosie" and she tells you what matters today.
 | All data on `D:\Rosie` (Windows) | Keeps the system drive clean |
 | Python core + Tauri UI | One language for AI/voice/bot; tiny native desktop app |
 
+## Try it
+
+```bash
+ollama pull qwen3:8b      # once
+rosie chat                # /help, /tools, /reset, /exit
+```
+
+When Rosie wants to do something that needs your yes (see `config/permissions.yaml`),
+she asks `Allow? [y/N]` in the terminal; anything but `y` means no.
+
 ## Development
 
 ```bash

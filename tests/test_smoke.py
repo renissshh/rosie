@@ -7,5 +7,5 @@ def test_version_is_set():
 
 
 def test_main_prints_greeting(capsys):
-    main()
+    assert main([]) == 0
     assert "Rosie" in capsys.readouterr().out
