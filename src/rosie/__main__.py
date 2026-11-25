@@ -24,6 +24,7 @@ from rosie.builtin_tools import register_builtin_tools
 from rosie.config import RosieConfig, load_config, load_dotenv
 from rosie.context import ContextBuilder
 from rosie.memory import FactStore, register_memory_tools
+from rosie.notify import DesktopNotifier, Router
 from rosie.prompt import now_in
 from rosie.reminders import Reminders, register_reminder_tools
 from rosie.scheduler import Scheduler
@@ -53,6 +54,12 @@ def build_registry(config: RosieConfig, reminders: Reminders | None = None) -> T
     if reminders is not None:
         register_reminder_tools(registry, reminders)
     return registry
+
+
+def desktop_or_none() -> DesktopNotifier | None:
+    """Windows toasts when on Windows; elsewhere notifications skip the desktop."""
+    desktop = DesktopNotifier()
+    return desktop if desktop.available else None
 
 
 def start_reminders(config: RosieConfig, notify) -> tuple[Reminders, threading.Event]:
@@ -99,7 +106,7 @@ def run_telegram(config_arg: str | None, environ: Mapping[str, str] | None = Non
     except TelegramError as exc:
         print(f"Telegram is not set up: {exc}")
         return 1
-    reminders, stop = start_reminders(config, bot.notify)
+    reminders, stop = start_reminders(config, Router(desktop_or_none(), bot.notify))
     context = ContextBuilder(fact_store(config), task_store(config))
     session = build_session(
         config, build_registry(config, reminders), context=context.build, ask_user=bot.ask
@@ -141,7 +148,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         load_dotenv(Path(".env"))
         config = load_config(find_config(args.config))
         context = ContextBuilder(fact_store(config), task_store(config))
-        reminders, stop = start_reminders(config, lambda title, text: print(f"\n[{title}] {text}"))
+        terminal = lambda title, text: print(f"\n[{title}] {text}")  # noqa: E731
+        reminders, stop = start_reminders(config, Router(desktop_or_none(), terminal))
         registry = build_registry(config, reminders)
         try:
             run_chat(build_session(config, registry, context=context.build))

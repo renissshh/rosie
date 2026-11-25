@@ -42,7 +42,7 @@ Status legend: `[x]` done, `[ ]` to do.
 - [x] Scheduler, persisted jobs (own SQLite scheduler instead of APScheduler: docs/decisions/0002)
 - [x] Reminders: one-off, recurring, snooze, one follow-up then log skipped
 - [x] Telegram bot allowlisted to one chat id (`docs/SETUP-TELEGRAM.md`) **[needs you: BotFather token in .env]**
-- [ ] Windows desktop notifications; route desktop vs Telegram by presence
+- [x] Windows desktop notifications; route desktop vs Telegram by presence
 - [ ] Morning brief (Top 3, schedule, overdue, one avoided task)
 - [ ] Nightly review (3 questions -> daily/, drafts tomorrow)
 - [ ] Merge, tag v0.3

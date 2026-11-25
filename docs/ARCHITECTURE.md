@@ -37,6 +37,7 @@ Tours: [v0.1 one message end to end](WALKTHROUGH-v0.1.md), [v0.2 memory, tasks, 
 | `rosie.scheduler` | Jobs in SQLite (once, daily, weekly, every N min), IST recurrence, missed runs merged, crash-isolated handlers. See decision 0002. |
 | `rosie.reminders` | One-off and repeating reminders ("tomorrow 7am", "weekdays"); fire, one follow-up after 15 min, then "skipped" goes to today's daily note; done / snooze / cancel. |
 | `rosie.telegram` | Bot API over HTTPS long polling (no open port), one allowlisted chat, yes/no questions in the chat, reminders delivered there; errors never include the token. |
+| `rosie.notify` | Windows toast (built-in PowerShell + WinRT, text via env vars) when you're at the laptop, Telegram when idle > 5 min, each the other's fallback. |
 
 ## Invariants (each one has a test)
 
