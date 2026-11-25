@@ -43,7 +43,7 @@ Status legend: `[x]` done, `[ ]` to do.
 - [x] Reminders: one-off, recurring, snooze, one follow-up then log skipped
 - [x] Telegram bot allowlisted to one chat id (`docs/SETUP-TELEGRAM.md`) **[needs you: BotFather token in .env]**
 - [x] Windows desktop notifications; route desktop vs Telegram by presence
-- [ ] Morning brief (Top 3, schedule, overdue, one avoided task)
+- [x] Morning brief (Top 3, schedule, overdue, one avoided task)
 - [ ] Nightly review (3 questions -> daily/, drafts tomorrow)
 - [ ] Merge, tag v0.3
 

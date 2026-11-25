@@ -25,3 +25,6 @@ llm:
 #   api_key_env: "GEMINI_API_KEY"
 
 max_agent_steps: 8
+
+# Morning brief time (local). Written to rosie-vault/daily and sent as a notification.
+brief_time: "07:30"

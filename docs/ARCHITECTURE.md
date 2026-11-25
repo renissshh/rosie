@@ -38,6 +38,7 @@ Tours: [v0.1 one message end to end](WALKTHROUGH-v0.1.md), [v0.2 memory, tasks, 
 | `rosie.reminders` | One-off and repeating reminders ("tomorrow 7am", "weekdays"); fire, one follow-up after 15 min, then "skipped" goes to today's daily note; done / snooze / cancel. |
 | `rosie.telegram` | Bot API over HTTPS long polling (no open port), one allowlisted chat, yes/no questions in the chat, reminders delivered there; errors never include the token. |
 | `rosie.notify` | Windows toast (built-in PowerShell + WinRT, text via env vars) when you're at the laptop, Telegram when idle > 5 min, each the other's fallback. |
+| `rosie.brief` | Morning brief at `brief_time`: Top 3, today's reminders, overdue, one avoided task (open 3+ days); written to the daily note, short version notified. `rosie brief` prints it. |
 
 ## Invariants (each one has a test)
 

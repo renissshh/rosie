@@ -4,6 +4,7 @@
     rosie doctor [--config PATH]  check the setup (Python, D:\\Rosie, Ollama, vault)
     rosie vault [--config PATH]   create rosie-vault's folders and sync it with git
     rosie telegram [--config PATH] answer on Telegram (needs TELEGRAM_* in .env)
+    rosie brief [--config PATH]   print today's morning brief
     rosie --version
 
 Config file lookup: --config, then the ROSIE_CONFIG env var, then
@@ -20,6 +21,7 @@ from datetime import date
 from pathlib import Path
 
 from rosie import __version__
+from rosie.brief import MorningBrief, build_brief
 from rosie.builtin_tools import register_builtin_tools
 from rosie.config import RosieConfig, load_config, load_dotenv
 from rosie.context import ContextBuilder
@@ -66,6 +68,9 @@ def start_reminders(config: RosieConfig, notify) -> tuple[Reminders, threading.E
     """Scheduler thread for the chat session. Set the returned event to stop it."""
     scheduler = Scheduler(config.data_dir / "index" / "scheduler.db", config.timezone)
     reminders = Reminders(scheduler, notify, vault_writer(config), config.timezone)
+    MorningBrief(task_store(config), vault_writer(config), notify, reminders).schedule(
+        config.brief_time
+    )
     stop = threading.Event()
     threading.Thread(target=scheduler.run_forever, args=(stop,), daemon=True).start()
     return reminders, stop
@@ -132,6 +137,8 @@ def _parser() -> argparse.ArgumentParser:
     doctor.add_argument("--config", help="path to rosie.yaml")
     vault = sub.add_parser("vault", help="set up and sync rosie-vault")
     vault.add_argument("--config", help="path to rosie.yaml")
+    brief = sub.add_parser("brief", help="print today's morning brief")
+    brief.add_argument("--config", help="path to rosie.yaml")
     telegram = sub.add_parser("telegram", help="answer on Telegram from your phone")
     telegram.add_argument("--config", help="path to rosie.yaml")
     return parser
@@ -162,6 +169,9 @@ def main(argv: Sequence[str] | None = None) -> int:
         text, code = report(run_checks(load_config(find_config(args.config))))
         print(text)
         return code
+    if args.command == "brief":
+        print(build_brief(task_store(load_config(find_config(args.config)))), end="")
+        return 0
     if args.command == "telegram":
         return run_telegram(args.config)
     if args.command == "vault":
