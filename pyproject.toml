@@ -20,7 +20,7 @@ dependencies = [
 [project.optional-dependencies]
 dev = ["pytest>=8.0", "ruff>=0.6", "numpy>=1.26"]
 # Microphone and speakers (Sprint 4). Not needed for chat, Telegram or tests.
-voice = ["sounddevice>=0.4", "faster-whisper>=1.1", "sherpa-onnx>=1.10"]
+voice = ["sounddevice>=0.4", "faster-whisper>=1.1", "sherpa-onnx>=1.10", "openwakeword>=0.6"]
 
 [project.scripts]
 rosie = "rosie.__main__:main"
