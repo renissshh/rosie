@@ -20,7 +20,7 @@ Status legend: `[x]` done, `[ ]` to do.
 - [x] Config loader (YAML + env, D:\Rosie on Windows, vault-overlap guard)
 - [x] Logging with secret masking
 - [x] LLM client: OpenAI-compatible, local Ollama first, free-tier fallback
-- [ ] Tool registry (JSON-schema tools, typed handlers)
+- [x] Tool registry (JSON-schema tools, typed handlers)
 - [ ] Agent loop with step cap and tool-call log
 - [ ] Safety gate: run / ask / block tiers + tests
 - [ ] `config/SOUL.md` persona + system prompt builder
