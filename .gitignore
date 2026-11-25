@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+.ruff_cache/
+
+# Secrets and local config: never commit these
+.env
+config/rosie.local.yaml
+
+# Runtime data (lives on D:\Rosie on Windows, never in the repo)
+data/
+logs/
+*.sqlite
+*.db
+
+# Editors / OS
+.vscode/
+.idea/
+Thumbs.db
+.DS_Store
