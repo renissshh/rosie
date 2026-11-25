@@ -45,7 +45,7 @@ Status legend: `[x]` done, `[ ]` to do.
 - [x] Windows desktop notifications; route desktop vs Telegram by presence
 - [x] Morning brief (Top 3, schedule, overdue, one avoided task)
 - [x] Nightly review (3 questions -> daily/, drafts tomorrow)
-- [ ] Merge, tag v0.3
+- [x] Merge, tag v0.3, walkthrough doc (`docs/WALKTHROUGH-v0.3.md`)
 
 ## Sprint 4: Voice (Dec 16 to Dec 22) -> v0.4 "hands-free"
 - [ ] Mic capture + voice activity detection

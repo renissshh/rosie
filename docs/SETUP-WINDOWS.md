@@ -77,7 +77,8 @@ Try: "what day is it?", "what's in my DBMS note?". Type `/exit` to leave.
 | Path | What |
 | --- | --- |
 | `D:\Rosie\app` | Rosie's code (this repo) |
-| `D:\Rosie\rosie-vault` | Rosie's own notes (Sprint 2) |
+| `D:\Rosie\rosie-vault` | Rosie's own notes: daily, tasks, memory, logs (`rosie vault` creates it) |
+| `D:\Rosie\index` | Search index, memory index and scheduled jobs (safe to delete except `scheduler.db`) |
 | `D:\Rosie\logs` | `rosie.log` and `tool_calls.jsonl` (every action she took) |
 | `D:\Rosie\SOUL.md` | Optional: your own edit of her personality (copy `config\SOUL.md`) |
 | `D:\Rosie\ollama-models` | The downloaded LLM |
