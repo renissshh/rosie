@@ -30,7 +30,7 @@ Status legend: `[x]` done, `[ ]` to do.
 - [x] Merge, tag v0.1, walkthrough doc (`docs/WALKTHROUGH-v0.1.md`)
 
 ## Sprint 2: Memory + vault (Dec 2 to Dec 8) -> v0.2 "she remembers"
-- [ ] rosie-vault layout: daily/ tasks/ memory/ study-log/ training-log/ + git sync
+- [x] rosie-vault layout: daily/ tasks/ memory/ study-log/ training-log/ + git sync
 - [ ] Vault writer with path guard; tests prove no writes outside rosie-vault
 - [ ] Facts store: remember / update / forget (markdown + SQLite index)
 - [ ] Tasks: add / list / complete, due dates, priorities

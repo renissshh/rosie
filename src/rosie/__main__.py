@@ -2,6 +2,7 @@
 
     rosie chat [--config PATH]    talk to Rosie in the terminal
     rosie doctor [--config PATH]  check the setup (Python, D:\\Rosie, Ollama, vault)
+    rosie vault [--config PATH]   create rosie-vault's folders and sync it with git
     rosie --version
 
 Config file lookup: --config, then the ROSIE_CONFIG env var, then
@@ -46,6 +47,8 @@ def _parser() -> argparse.ArgumentParser:
     chat.add_argument("--config", help="path to rosie.yaml")
     doctor = sub.add_parser("doctor", help="check that Rosie is set up correctly")
     doctor.add_argument("--config", help="path to rosie.yaml")
+    vault = sub.add_parser("vault", help="set up and sync rosie-vault")
+    vault.add_argument("--config", help="path to rosie.yaml")
     return parser
 
 
@@ -67,6 +70,15 @@ def main(argv: Sequence[str] | None = None) -> int:
         text, code = report(run_checks(load_config(find_config(args.config))))
         print(text)
         return code
+    if args.command == "vault":
+        from rosie.vault import GitSync, ensure_layout
+
+        config = load_config(find_config(args.config))
+        created = ensure_layout(config.vault_dir)
+        result = GitSync(config.vault_dir).sync("rosie: sync vault")
+        print(f"rosie-vault: {config.vault_dir} ({len(created)} new files)")
+        print("synced" if result.pushed else result.error or "committed locally (no remote)")
+        return 0 if result.ok else 1
     return 0
 
 

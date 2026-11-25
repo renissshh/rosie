@@ -28,6 +28,7 @@ Step-by-step tour of one message: [WALKTHROUGH-v0.1.md](WALKTHROUGH-v0.1.md).
 | `rosie.chat` | `rosie chat`: history kept per session (trimmed by whole turns), yes/no prompt for the gate, friendly message when Ollama is down. |
 | `rosie.builtin_tools` | `get_datetime` (IST clock) and `read_note` (user vault, read only, path-guarded, finds notes by name). |
 | `rosie.doctor` | `rosie doctor`: checks Python, `D:\Rosie`, Ollama + model, fallback key (name only), vault, permissions. |
+| `rosie.vault` | rosie-vault layout (daily/ tasks/ memory/ study-log/ training-log/) and git sync: commit as "Rosie", pull --rebase, push; offline keeps the local commit. |
 
 ## Invariants (each one has a test)
 
