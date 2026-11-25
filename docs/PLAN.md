@@ -48,7 +48,7 @@ Status legend: `[x]` done, `[ ]` to do.
 - [x] Merge, tag v0.3, walkthrough doc (`docs/WALKTHROUGH-v0.3.md`)
 
 ## Sprint 4: Voice (Dec 16 to Dec 22) -> v0.4 "hands-free"
-- [ ] Mic capture + voice activity detection
+- [x] Mic capture + voice activity detection
 - [ ] Speech-to-text (faster-whisper) + latency benchmark
 - [ ] Text-to-speech (sherpa-onnx), choose Rosie's voice
 - [ ] "Hey Rosie" wake word (livekit-wakeword / openWakeWord) **[needs you: voice samples, after exams]**

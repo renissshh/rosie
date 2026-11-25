@@ -40,6 +40,7 @@ Tours: [v0.1 one message end to end](WALKTHROUGH-v0.1.md), [v0.2 memory, tasks, 
 | `rosie.notify` | Windows toast (built-in PowerShell + WinRT, text via env vars) when you're at the laptop, Telegram when idle > 5 min, each the other's fallback. |
 | `rosie.brief` | Morning brief at `brief_time`: Top 3, today's reminders, overdue, one avoided task (open 3+ days); written to the daily note, short version notified. `rosie brief` prints it. |
 | `rosie.review` | Nightly review at `review_time`: 3 questions (Telegram or `rosie review`), answers + completed tasks to today's note, tomorrow's top 3 drafted as tasks and a "Draft plan" in tomorrow's note. |
+| `rosie.audio` | 16 kHz mono 30 ms frames; `EnergyVAD` (adaptive noise floor), `UtteranceDetector` (start after 90 ms, 300 ms pre-roll, end after 800 ms pause, 15 s cap), WAV helpers, `Microphone` via optional sounddevice. |
 
 ## Invariants (each one has a test)
 
