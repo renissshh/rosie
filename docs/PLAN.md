@@ -54,7 +54,7 @@ Status legend: `[x]` done, `[ ]` to do.
 - [x] "Hey Rosie" wake word: openWakeWord + spoken-name fallback (`docs/VOICE.md`) **[needs you: voice samples + training, after exams]**
 - [x] Wake -> listen -> think -> speak loop, barge-in (`rosie voice`)
 - [x] Telegram voice notes in/out
-- [ ] Merge, tag v0.4
+- [x] Merge, tag v0.4, walkthrough doc (`docs/WALKTHROUGH-v0.4.md`)
 
 ## Sprint 5: Orb UI + autostart (Dec 23 to Dec 29) -> v0.5 "opens at login"
 - [ ] Tauri 2 + React shell, transparent always-on-top window

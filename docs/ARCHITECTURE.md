@@ -1,6 +1,6 @@
-# Architecture (v0.3, updated each sprint)
+# Architecture (v0.4, updated each sprint)
 
-Tours: [v0.1 one message end to end](WALKTHROUGH-v0.1.md), [v0.2 memory, tasks, search](WALKTHROUGH-v0.2.md), [v0.3 reminders, brief, review, Telegram](WALKTHROUGH-v0.3.md).
+Tours: [v0.1 one message end to end](WALKTHROUGH-v0.1.md), [v0.2 memory, tasks, search](WALKTHROUGH-v0.2.md), [v0.3 reminders, brief, review, Telegram](WALKTHROUGH-v0.3.md), [v0.4 voice](WALKTHROUGH-v0.4.md).
 
 ```
  Laptop: orb + voice        LLM API (Ollama local / free-tier cloud)        Phone: Telegram
