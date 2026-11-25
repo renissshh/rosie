@@ -23,7 +23,7 @@ Status legend: `[x]` done, `[ ]` to do.
 - [x] Tool registry (JSON-schema tools, typed handlers)
 - [x] Agent loop with step cap and tool-call log
 - [x] Safety gate: enforce `config/permissions.yaml` (allow / ask / deny, fail closed) + tests. Decisions: docs/decisions/0001
-- [ ] `config/SOUL.md` persona + system prompt builder
+- [x] `config/SOUL.md` persona + system prompt builder
 - [ ] Terminal chat (`rosie chat`) with conversation history
 - [ ] First tools: current time/date, read a note from the user vault
 - [ ] Windows setup guide: install Python, Ollama, pull model, `D:\Rosie` **[needs you: run it after exams]**
