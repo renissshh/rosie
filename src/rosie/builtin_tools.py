@@ -61,8 +61,10 @@ class UserVault:
             raise ToolError("use a path inside your vault, not an absolute path")
         wanted = Path(name) if name.lower().endswith(".md") else Path(name + ".md")
 
+        # A bare name ("Gym") always searches by name, so the result doesn't depend on
+        # Windows being case-insensitive; a path ("Old/Gym") is opened directly.
         direct = self.root / wanted
-        if direct.exists():
+        if "/" in name and direct.exists():
             if not self._inside(direct):
                 raise ToolError(f"'{name}' is outside your vault")
             if direct.is_file():

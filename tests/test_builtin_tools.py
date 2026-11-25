@@ -44,6 +44,7 @@ def test_read_note_by_path_or_name(vault, name):
 
 
 def test_ambiguous_name_lists_options(vault):
+    # same result on case-insensitive Windows, where vault/gym.md "exists"
     with pytest.raises(ToolError, match="several notes.*Gym.md.*Old/Gym.md"):
         UserVault(vault).read("gym")
     assert "old plan" in UserVault(vault).read("Old/Gym")
@@ -77,8 +78,11 @@ def test_symlink_out_of_vault_is_refused(vault, tmp_path):
         (vault / "link.md").symlink_to(tmp_path / "outside.md")
     except OSError:
         pytest.skip("symlinks need admin rights on this Windows runner")
-    with pytest.raises(ToolError, match="outside your vault"):
+    with pytest.raises(ToolError, match="no note"):  # by name: hidden from the search
         UserVault(vault).read("link.md")
+    (vault / "Sem 3" / "link.md").symlink_to(tmp_path / "outside.md")
+    with pytest.raises(ToolError, match="outside your vault"):  # by path: refused
+        UserVault(vault).read("Sem 3/link.md")
     assert "link" not in [p.stem for p in UserVault(vault).notes()]
 
 
