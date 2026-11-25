@@ -2,6 +2,7 @@
 
     rosie chat [--config PATH]    talk to Rosie in the terminal
     rosie doctor [--config PATH]  check the setup (Python, D:\\Rosie, Ollama, vault)
+    rosie vault [--config PATH]   create rosie-vault's folders and sync it with git
     rosie --version
 
 Config file lookup: --config, then the ROSIE_CONFIG env var, then
@@ -13,12 +14,19 @@ from __future__ import annotations
 import argparse
 import os
 from collections.abc import Mapping, Sequence
+from datetime import date
 from pathlib import Path
 
 from rosie import __version__
 from rosie.builtin_tools import register_builtin_tools
 from rosie.config import RosieConfig, load_config, load_dotenv
+from rosie.context import ContextBuilder
+from rosie.memory import FactStore, register_memory_tools
+from rosie.prompt import now_in
+from rosie.search import NoteIndex, register_search_tool
+from rosie.tasks import TaskStore, register_task_tools
 from rosie.tools import ToolRegistry
+from rosie.vault_writer import VaultWriter
 
 
 def find_config(arg: str | None, environ: Mapping[str, str] | None = None) -> Path | None:
@@ -35,7 +43,34 @@ def build_registry(config: RosieConfig) -> ToolRegistry:
     """All tools Rosie has today."""
     registry = ToolRegistry()
     register_builtin_tools(registry, config)
+    register_memory_tools(registry, fact_store(config))
+    register_task_tools(registry, task_store(config))
+    register_search_tool(registry, note_index(config))
     return registry
+
+
+def note_index(config: RosieConfig) -> NoteIndex:
+    vaults = {"rosie": config.vault_dir}
+    if config.user_vault_dir is not None:
+        vaults["yours"] = config.user_vault_dir
+    return NoteIndex(config.data_dir / "index" / "notes.db", vaults)
+
+
+def vault_writer(config: RosieConfig) -> VaultWriter:
+    forbidden = [config.user_vault_dir] if config.user_vault_dir else []
+    return VaultWriter(config.vault_dir, forbidden=forbidden)
+
+
+def task_store(config: RosieConfig) -> TaskStore:
+    return TaskStore(vault_writer(config), today=lambda: today_in(config))
+
+
+def today_in(config: RosieConfig) -> date:
+    return now_in(config.timezone).date()
+
+
+def fact_store(config: RosieConfig) -> FactStore:
+    return FactStore(vault_writer(config), config.data_dir / "index" / "memory.db")
 
 
 def _parser() -> argparse.ArgumentParser:
@@ -46,6 +81,8 @@ def _parser() -> argparse.ArgumentParser:
     chat.add_argument("--config", help="path to rosie.yaml")
     doctor = sub.add_parser("doctor", help="check that Rosie is set up correctly")
     doctor.add_argument("--config", help="path to rosie.yaml")
+    vault = sub.add_parser("vault", help="set up and sync rosie-vault")
+    vault.add_argument("--config", help="path to rosie.yaml")
     return parser
 
 
@@ -59,7 +96,8 @@ def main(argv: Sequence[str] | None = None) -> int:
 
         load_dotenv(Path(".env"))
         config = load_config(find_config(args.config))
-        run_chat(build_session(config, build_registry(config)))
+        context = ContextBuilder(fact_store(config), task_store(config))
+        run_chat(build_session(config, build_registry(config), context=context.build))
     if args.command == "doctor":
         from rosie.doctor import report, run_checks
 
@@ -67,6 +105,15 @@ def main(argv: Sequence[str] | None = None) -> int:
         text, code = report(run_checks(load_config(find_config(args.config))))
         print(text)
         return code
+    if args.command == "vault":
+        from rosie.vault import GitSync, ensure_layout
+
+        config = load_config(find_config(args.config))
+        created = ensure_layout(config.vault_dir)
+        result = GitSync(config.vault_dir).sync("rosie: sync vault")
+        print(f"rosie-vault: {config.vault_dir} ({len(created)} new files)")
+        print("synced" if result.pushed else result.error or "committed locally (no remote)")
+        return 0 if result.ok else 1
     return 0
 
 

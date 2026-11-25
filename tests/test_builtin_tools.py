@@ -101,7 +101,7 @@ def test_reading_never_changes_the_vault(vault):
 def test_registered_tools_and_permissions(vault, tmp_path):
     config = RosieConfig(data_dir=tmp_path / "data", user_vault_dir=vault)
     reg = build_registry(config)
-    assert reg.names() == ["get_datetime", "read_note"]
+    assert {"get_datetime", "read_note"} <= set(reg.names())
     assert "IST" in reg.call("get_datetime", {})
     assert "1NF" in reg.call("read_note", {"name": "DBMS"})
     gate = SafetyGate(PermissionPolicy.load())  # nobody to ask: only allow-listed tools run

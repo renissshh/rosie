@@ -1,6 +1,6 @@
-# Architecture (v0.1, updated each sprint)
+# Architecture (v0.2, updated each sprint)
 
-Step-by-step tour of one message: [WALKTHROUGH-v0.1.md](WALKTHROUGH-v0.1.md).
+Tours: [v0.1 one message end to end](WALKTHROUGH-v0.1.md), [v0.2 memory, tasks, search](WALKTHROUGH-v0.2.md).
 
 ```
  Laptop: orb + voice        LLM API (Ollama local / free-tier cloud)        Phone: Telegram
@@ -28,10 +28,16 @@ Step-by-step tour of one message: [WALKTHROUGH-v0.1.md](WALKTHROUGH-v0.1.md).
 | `rosie.chat` | `rosie chat`: history kept per session (trimmed by whole turns), yes/no prompt for the gate, friendly message when Ollama is down. |
 | `rosie.builtin_tools` | `get_datetime` (IST clock) and `read_note` (user vault, read only, path-guarded, finds notes by name). |
 | `rosie.doctor` | `rosie doctor`: checks Python, `D:\Rosie`, Ollama + model, fallback key (name only), vault, permissions. |
+| `rosie.vault` | rosie-vault layout (daily/ tasks/ memory/ study-log/ training-log/) and git sync: commit as "Rosie", pull --rebase, push; offline keeps the local commit. |
+| `rosie.vault_writer` | The only writer: notes in rosie-vault only (no `..`, absolute, drive, UNC, symlink escapes, `.git`, non-`.md`), atomic writes. |
+| `rosie.memory` | Facts: one markdown file per topic in `memory/`, Obsidian block ids (`^a1b2c3`), rebuildable SQLite FTS5 index; remember / update / forget / recall tools. |
+| `rosie.tasks` | Tasks in `tasks/tasks.md`, Obsidian Tasks format (⏫🔼🔽 priority, 📅 due, ✅ done); due dates like "friday" or "in 3 days"; add / list / complete tools. |
+| `rosie.search` | FTS5 index of both vaults in `D:\Rosie\index\notes.db`, refreshed incrementally by size/mtime; `search_notes` tool with snippets. |
+| `rosie.context` | Before each reply: facts matching the message (max 5) + tasks due today/overdue go into the system prompt; failures only drop the context. |
 
 ## Invariants (each one has a test)
 
-1. Rosie never writes outside `rosie-vault`. (config overlap guard; `read_note` resolves paths and refuses anything outside the user vault; vault writer path guard in Sprint 2)
+1. Rosie never writes outside `rosie-vault`. (config overlap guard; `read_note` resolves paths and refuses anything outside the user vault; `VaultWriter` refuses every path outside rosie-vault, tested against 15 escape attempts)
 2. Secrets never reach logs.
 3. The cloud model is only called when the local model fails.
 4. Denied actions never run, even if the model requests them directly; unknown actions and a broken policy file mean "ask".
