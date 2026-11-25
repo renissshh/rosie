@@ -36,7 +36,7 @@ Status legend: `[x]` done, `[ ]` to do.
 - [x] Tasks: add / list / complete, due dates, priorities
 - [x] Read-only index of the user's vault; search across both vaults
 - [x] Context builder: relevant memories in every reply
-- [ ] Merge, tag v0.2
+- [x] Merge, tag v0.2, walkthrough doc (`docs/WALKTHROUGH-v0.2.md`)
 
 ## Sprint 3: Reminders + Telegram (Dec 9 to Dec 15) -> v0.3 "daily-usable"
 - [ ] Scheduler (APScheduler, persisted jobs)
