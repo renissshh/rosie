@@ -130,12 +130,12 @@ def frames_of(pcm: bytes) -> Iterator[bytes]:
         yield pcm[start : start + FRAME_BYTES]
 
 
-def write_wav(path: Path, pcm: bytes) -> Path:
+def write_wav(path: Path, pcm: bytes, rate: int = SAMPLE_RATE) -> Path:
     path.parent.mkdir(parents=True, exist_ok=True)
     with wave.open(str(path), "wb") as w:
         w.setnchannels(1)
         w.setsampwidth(2)
-        w.setframerate(SAMPLE_RATE)
+        w.setframerate(rate)
         w.writeframes(pcm)
     return path
 
@@ -173,3 +173,13 @@ class Microphone:
         ):
             while True:
                 yield self._queue.get()
+
+
+def play(pcm: bytes, rate: int) -> None:
+    """Play 16-bit mono PCM on the default speakers and wait until it finishes."""
+    try:
+        import numpy as np
+        import sounddevice
+    except ImportError as exc:
+        raise RuntimeError('playback needs sounddevice: pip install -e ".[voice]"') from exc
+    sounddevice.play(np.frombuffer(pcm, dtype=np.int16), rate, blocking=True)

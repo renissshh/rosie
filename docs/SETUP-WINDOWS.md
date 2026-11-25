@@ -89,6 +89,13 @@ a `.txt` next to each holding what you said (`remind.wav` + `remind.txt`). Then:
 It downloads the model once into `D:\Rosie\models` and saves a report to
 `D:\Rosie\logs\stt-bench.md`. Under ~1.5 s per sentence feels conversational.
 
+Hear Rosie's voices (`rosie voices` lists them) and keep the one you like as `voice:` in
+`config\rosie.yaml`:
+
+```powershell
+.venv\Scripts\rosie say "Good evening, VinsmokE. Your DBMS exam is in 16 days." --voice kokoro-george
+```
+
 ## Where things live
 
 | Path | What |

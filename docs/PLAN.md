@@ -50,7 +50,7 @@ Status legend: `[x]` done, `[ ]` to do.
 ## Sprint 4: Voice (Dec 16 to Dec 22) -> v0.4 "hands-free"
 - [x] Mic capture + voice activity detection
 - [x] Speech-to-text (faster-whisper) + latency benchmark (`rosie stt-bench`)
-- [ ] Text-to-speech (sherpa-onnx), choose Rosie's voice
+- [x] Text-to-speech (sherpa-onnx), choose Rosie's voice (default `kokoro-emma`; audition with `rosie say`)
 - [ ] "Hey Rosie" wake word (livekit-wakeword / openWakeWord) **[needs you: voice samples, after exams]**
 - [ ] Wake -> listen -> think -> speak loop, barge-in
 - [ ] Telegram voice notes in/out

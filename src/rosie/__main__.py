@@ -7,6 +7,8 @@
     rosie brief [--config PATH]   print today's morning brief
     rosie review [--config PATH]  nightly review: three questions in the terminal
     rosie stt-bench FOLDER [--model base.en]  speech-to-text speed/accuracy on recordings
+    rosie voices                  list Rosie's voices
+    rosie say TEXT [--voice NAME] [--out FILE.wav]  hear (or save) a voice
     rosie --version
 
 Config file lookup: --config, then the ROSIE_CONFIG env var, then
@@ -161,6 +163,24 @@ def run_telegram(config_arg: str | None, environ: Mapping[str, str] | None = Non
     return 0
 
 
+def run_say(text: str, voice: str | None, out: str | None, config_arg: str | None) -> int:
+    from rosie.audio import play, write_wav
+    from rosie.tts import Speaker, TTSError
+
+    config = load_config(find_config(config_arg))
+    try:
+        speaker = Speaker(voice or config.voice, config.data_dir / "models")
+        pcm, rate = speaker.synthesize(text)
+        if out:
+            print(f"saved {write_wav(Path(out), pcm, rate)}")
+        else:
+            play(pcm, rate)
+    except (TTSError, RuntimeError) as exc:
+        print(exc)
+        return 1
+    return 0
+
+
 def run_stt_bench(folder: Path, model: str, config_arg: str | None = None) -> int:
     from rosie.stt import WhisperTranscriber, benchmark, load_samples, report
 
@@ -194,6 +214,12 @@ def _parser() -> argparse.ArgumentParser:
     bench.add_argument("folder")
     bench.add_argument("--model", default="base.en")
     bench.add_argument("--config", help="path to rosie.yaml")
+    sub.add_parser("voices", help="list Rosie's voices")
+    say = sub.add_parser("say", help="speak a sentence with one of the voices")
+    say.add_argument("text")
+    say.add_argument("--voice", help="voice name (default: `voice` in rosie.yaml)")
+    say.add_argument("--out", help="save to a WAV file instead of playing")
+    say.add_argument("--config", help="path to rosie.yaml")
     review = sub.add_parser("review", help="nightly review in the terminal")
     review.add_argument("--config", help="path to rosie.yaml")
     telegram = sub.add_parser("telegram", help="answer on Telegram from your phone")
@@ -229,6 +255,16 @@ def main(argv: Sequence[str] | None = None) -> int:
     if args.command == "brief":
         print(build_brief(task_store(load_config(find_config(args.config)))), end="")
         return 0
+    if args.command == "voices":
+        from rosie.tts import VOICES
+
+        config = load_config(find_config(None))
+        for voice in VOICES.values():
+            mark = "*" if voice.name == config.voice else " "
+            print(f"{mark} {voice.name:16} {voice.description}")
+        return 0
+    if args.command == "say":
+        return run_say(args.text, args.voice, args.out, args.config)
     if args.command == "stt-bench":
         return run_stt_bench(Path(args.folder), args.model, args.config)
     if args.command == "review":
