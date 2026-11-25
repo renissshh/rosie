@@ -39,7 +39,7 @@ Status legend: `[x]` done, `[ ]` to do.
 - [x] Merge, tag v0.2, walkthrough doc (`docs/WALKTHROUGH-v0.2.md`)
 
 ## Sprint 3: Reminders + Telegram (Dec 9 to Dec 15) -> v0.3 "daily-usable"
-- [ ] Scheduler (APScheduler, persisted jobs)
+- [x] Scheduler, persisted jobs (own SQLite scheduler instead of APScheduler: docs/decisions/0002)
 - [ ] Reminders: one-off, recurring, snooze, one follow-up then log skipped
 - [ ] Telegram bot allowlisted to one chat id **[needs you: BotFather token in .env]**
 - [ ] Windows desktop notifications; route desktop vs Telegram by presence
