@@ -26,7 +26,7 @@ Status legend: `[x]` done, `[ ]` to do.
 - [x] `config/SOUL.md` persona + system prompt builder
 - [x] Terminal chat (`rosie chat`) with conversation history
 - [x] First tools: current time/date, read a note from the user vault
-- [ ] Windows setup guide: install Python, Ollama, pull model, `D:\Rosie` **[needs you: run it after exams]**
+- [x] Windows setup guide (`docs/SETUP-WINDOWS.md`) + `rosie doctor` **[needs you: run it after exams]**
 - [ ] Merge, tag v0.1, walkthrough doc
 
 ## Sprint 2: Memory + vault (Dec 2 to Dec 8) -> v0.2 "she remembers"

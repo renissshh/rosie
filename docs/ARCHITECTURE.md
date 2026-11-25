@@ -25,6 +25,7 @@
 | `rosie.prompt` | System prompt = `SOUL.md` persona + current IST time + available tools. `D:\Rosie\SOUL.md` overrides `config/SOUL.md`. |
 | `rosie.chat` | `rosie chat`: history kept per session (trimmed by whole turns), yes/no prompt for the gate, friendly message when Ollama is down. |
 | `rosie.builtin_tools` | `get_datetime` (IST clock) and `read_note` (user vault, read only, path-guarded, finds notes by name). |
+| `rosie.doctor` | `rosie doctor`: checks Python, `D:\Rosie`, Ollama + model, fallback key (name only), vault, permissions. |
 
 ## Invariants (each one has a test)
 

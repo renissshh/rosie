@@ -1,6 +1,7 @@
 """Entry point: `python -m rosie` or the `rosie` command.
 
     rosie chat [--config PATH]    talk to Rosie in the terminal
+    rosie doctor [--config PATH]  check the setup (Python, D:\\Rosie, Ollama, vault)
     rosie --version
 
 Config file lookup: --config, then the ROSIE_CONFIG env var, then
@@ -43,6 +44,8 @@ def _parser() -> argparse.ArgumentParser:
     sub = parser.add_subparsers(dest="command")
     chat = sub.add_parser("chat", help="talk to Rosie in the terminal")
     chat.add_argument("--config", help="path to rosie.yaml")
+    doctor = sub.add_parser("doctor", help="check that Rosie is set up correctly")
+    doctor.add_argument("--config", help="path to rosie.yaml")
     return parser
 
 
@@ -57,6 +60,13 @@ def main(argv: Sequence[str] | None = None) -> int:
         load_dotenv(Path(".env"))
         config = load_config(find_config(args.config))
         run_chat(build_session(config, build_registry(config)))
+    if args.command == "doctor":
+        from rosie.doctor import report, run_checks
+
+        load_dotenv(Path(".env"))
+        text, code = report(run_checks(load_config(find_config(args.config))))
+        print(text)
+        return code
     return 0
 
 

@@ -27,6 +27,8 @@ Obsidian vault. Say "Hey Rosie" and she tells you what matters today.
 
 ## Try it
 
+First-time setup on Windows: [docs/SETUP-WINDOWS.md](docs/SETUP-WINDOWS.md), then `rosie doctor`.
+
 ```bash
 ollama pull qwen3:8b      # once
 rosie chat                # /help, /tools, /reset, /exit
