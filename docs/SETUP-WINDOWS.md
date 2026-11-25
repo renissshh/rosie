@@ -72,6 +72,30 @@ Leave `.env` empty for now; keys are only needed for the optional cloud fallback
 
 Try: "what day is it?", "what's in my DBMS note?". Type `/exit` to leave.
 
+## 6. Voice (optional, Sprint 4)
+
+```powershell
+.venv\Scripts\python -m pip install -e ".[voice]"
+```
+
+To check speech-to-text speed, record a few short sentences as 16 kHz mono WAV files
+(Audacity: Project Rate 16000, Tracks -> Mix -> Mono, export WAV) into a folder, with
+a `.txt` next to each holding what you said (`remind.wav` + `remind.txt`). Then:
+
+```powershell
+.venv\Scripts\rosie stt-bench D:\Rosie\samples
+```
+
+It downloads the model once into `D:\Rosie\models` and saves a report to
+`D:\Rosie\logs\stt-bench.md`. Under ~1.5 s per sentence feels conversational.
+
+Hear Rosie's voices (`rosie voices` lists them) and keep the one you like as `voice:` in
+`config\rosie.yaml`:
+
+```powershell
+.venv\Scripts\rosie say "Good evening, VinsmokE. Your DBMS exam is in 16 days." --voice kokoro-george
+```
+
 ## Where things live
 
 | Path | What |
@@ -82,3 +106,4 @@ Try: "what day is it?", "what's in my DBMS note?". Type `/exit` to leave.
 | `D:\Rosie\logs` | `rosie.log` and `tool_calls.jsonl` (every action she took) |
 | `D:\Rosie\SOUL.md` | Optional: your own edit of her personality (copy `config\SOUL.md`) |
 | `D:\Rosie\ollama-models` | The downloaded LLM |
+| `D:\Rosie\models` | Speech models (Sprint 4) |

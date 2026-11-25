@@ -1,6 +1,6 @@
-# Architecture (v0.3, updated each sprint)
+# Architecture (v0.4, updated each sprint)
 
-Tours: [v0.1 one message end to end](WALKTHROUGH-v0.1.md), [v0.2 memory, tasks, search](WALKTHROUGH-v0.2.md), [v0.3 reminders, brief, review, Telegram](WALKTHROUGH-v0.3.md).
+Tours: [v0.1 one message end to end](WALKTHROUGH-v0.1.md), [v0.2 memory, tasks, search](WALKTHROUGH-v0.2.md), [v0.3 reminders, brief, review, Telegram](WALKTHROUGH-v0.3.md), [v0.4 voice](WALKTHROUGH-v0.4.md).
 
 ```
  Laptop: orb + voice        LLM API (Ollama local / free-tier cloud)        Phone: Telegram
@@ -40,6 +40,12 @@ Tours: [v0.1 one message end to end](WALKTHROUGH-v0.1.md), [v0.2 memory, tasks, 
 | `rosie.notify` | Windows toast (built-in PowerShell + WinRT, text via env vars) when you're at the laptop, Telegram when idle > 5 min, each the other's fallback. |
 | `rosie.brief` | Morning brief at `brief_time`: Top 3, today's reminders, overdue, one avoided task (open 3+ days); written to the daily note, short version notified. `rosie brief` prints it. |
 | `rosie.review` | Nightly review at `review_time`: 3 questions (Telegram or `rosie review`), answers + completed tasks to today's note, tomorrow's top 3 drafted as tasks and a "Draft plan" in tomorrow's note. |
+| `rosie.audio` | 16 kHz mono 30 ms frames; `EnergyVAD` (adaptive noise floor), `UtteranceDetector` (start after 90 ms, 300 ms pre-roll, end after 800 ms pause, 15 s cap), WAV helpers, `Microphone` via optional sounddevice. |
+| `rosie.stt` | faster-whisper on CPU (int8, beam 1, `base.en`), models in `D:\Rosie\models`; `rosie stt-bench` reports latency, real-time factor and word error rate. |
+| `rosie.tts` | sherpa-onnx voices (Kokoro, Piper), default British "kokoro-emma"; models downloaded once to `D:\Rosie\models` with tarfile's safe filter; `rosie voices`, `rosie say`. |
+| `rosie.wakeword` | "Hey Rosie": openWakeWord model (80 ms chunks, threshold, cooldown) or, untrained, the spoken-name fallback (transcribe utterance, wake if it starts with her name, keep the rest as the request). |
+| `rosie.voice_loop` | `rosie voice`: idle -> listening -> thinking -> speaking state machine fed 30 ms frames; 6 s listen timeout; barge-in after ~180 ms of loud speech while she talks; state callback for the orb. |
+| `rosie.voice_notes` | Telegram voice notes: OGG/Opus -> 16 kHz PCM for speech-to-text and Rosie's replies -> OGG/Opus voice bubbles, via PyAV. |
 
 ## Invariants (each one has a test)
 

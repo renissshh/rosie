@@ -48,13 +48,13 @@ Status legend: `[x]` done, `[ ]` to do.
 - [x] Merge, tag v0.3, walkthrough doc (`docs/WALKTHROUGH-v0.3.md`)
 
 ## Sprint 4: Voice (Dec 16 to Dec 22) -> v0.4 "hands-free"
-- [ ] Mic capture + voice activity detection
-- [ ] Speech-to-text (faster-whisper) + latency benchmark
-- [ ] Text-to-speech (sherpa-onnx), choose Rosie's voice
-- [ ] "Hey Rosie" wake word (livekit-wakeword / openWakeWord) **[needs you: voice samples, after exams]**
-- [ ] Wake -> listen -> think -> speak loop, barge-in
-- [ ] Telegram voice notes in/out
-- [ ] Merge, tag v0.4
+- [x] Mic capture + voice activity detection
+- [x] Speech-to-text (faster-whisper) + latency benchmark (`rosie stt-bench`)
+- [x] Text-to-speech (sherpa-onnx), choose Rosie's voice (default `kokoro-emma`; audition with `rosie say`)
+- [x] "Hey Rosie" wake word: openWakeWord + spoken-name fallback (`docs/VOICE.md`) **[needs you: voice samples + training, after exams]**
+- [x] Wake -> listen -> think -> speak loop, barge-in (`rosie voice`)
+- [x] Telegram voice notes in/out
+- [x] Merge, tag v0.4, walkthrough doc (`docs/WALKTHROUGH-v0.4.md`)
 
 ## Sprint 5: Orb UI + autostart (Dec 23 to Dec 29) -> v0.5 "opens at login"
 - [ ] Tauri 2 + React shell, transparent always-on-top window

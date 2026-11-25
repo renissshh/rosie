@@ -16,3 +16,6 @@
 Only that one chat is answered; everyone else gets silence. When Rosie needs a yes
 (see `config/permissions.yaml`) she asks in the chat and waits 2 minutes; no answer means no.
 Reminders arrive in the same chat.
+
+With the voice extras installed (`pip install -e ".[voice]"`), you can send Rosie voice
+notes: she replies with what she heard, her answer, and a voice note in her voice.

@@ -6,6 +6,10 @@
     rosie telegram [--config PATH] answer on Telegram (needs TELEGRAM_* in .env)
     rosie brief [--config PATH]   print today's morning brief
     rosie review [--config PATH]  nightly review: three questions in the terminal
+    rosie stt-bench FOLDER [--model base.en]  speech-to-text speed/accuracy on recordings
+    rosie voices                  list Rosie's voices
+    rosie voice [--config PATH]   hands-free: "Hey Rosie", then talk (needs [voice])
+    rosie say TEXT [--voice NAME] [--out FILE.wav]  hear (or save) a voice
     rosie --version
 
 Config file lookup: --config, then the ROSIE_CONFIG env var, then
@@ -130,6 +134,24 @@ def telegram_reply(text: str, review: NightlyReview, session) -> str:
         return "I can't reach my brain right now (is Ollama running on the laptop?)."
 
 
+def add_voice_notes(bot, config: RosieConfig) -> bool:
+    """Voice notes in and out on Telegram, if the [voice] extras are installed."""
+    from rosie.stt import WhisperTranscriber
+    from rosie.tts import Speaker, TTSError
+    from rosie.voice_notes import decode_to_pcm, encode_ogg_opus
+
+    models = config.data_dir / "models"
+    try:
+        stt = WhisperTranscriber("base.en", models)
+        speaker = Speaker(config.voice, models)
+    except (RuntimeError, TTSError) as exc:
+        print(f"Voice notes off: {exc}")
+        return False
+    bot.hear = lambda data: stt.transcribe(decode_to_pcm(data)).text
+    bot.speak = lambda text: encode_ogg_opus(*speaker.synthesize(text))
+    return True
+
+
 def run_telegram(config_arg: str | None, environ: Mapping[str, str] | None = None) -> int:
     from rosie.chat import build_session
     from rosie.telegram import TelegramError, bot_from_env
@@ -150,6 +172,7 @@ def run_telegram(config_arg: str | None, environ: Mapping[str, str] | None = Non
         config, build_registry(config, reminders), context=context.build, ask_user=bot.ask
     )
     bot.on_message = lambda text: telegram_reply(text, review, session)
+    add_voice_notes(bot, config)
     print("Rosie is listening on Telegram. Ctrl+C to stop.")
     try:
         bot.run_forever(stop)
@@ -157,6 +180,84 @@ def run_telegram(config_arg: str | None, environ: Mapping[str, str] | None = Non
         pass
     finally:
         stop.set()
+    return 0
+
+
+def run_voice(config_arg: str | None) -> int:
+    """Wire microphone, wake word, speech-to-text, the agent and the voice together."""
+    from rosie.audio import Microphone
+    from rosie.chat import build_session
+    from rosie.stt import WhisperTranscriber
+    from rosie.tts import Speaker, TTSError
+    from rosie.voice_loop import SoundDevicePlayer, VoiceLoop
+    from rosie.wakeword import OpenWakeWord, SpokenName
+
+    load_dotenv(Path(".env"))
+    config = load_config(find_config(config_arg))
+    models = config.data_dir / "models"
+    try:
+        mic, player = Microphone(), SoundDevicePlayer()
+        stt = WhisperTranscriber("base.en", models)
+        speaker = Speaker(config.voice, models)
+        trained = models / "hey_rosie.onnx"
+        wake = OpenWakeWord(str(trained)) if trained.is_file() else SpokenName(stt)
+    except (RuntimeError, TTSError, ImportError) as exc:
+        print(exc)
+        return 1
+    terminal = lambda title, text: print(f"[{title}] {text}")  # noqa: E731
+    reminders, stop = start_reminders(config, Router(desktop_or_none(), terminal))
+    context = ContextBuilder(fact_store(config), task_store(config))
+    session = build_session(config, build_registry(config, reminders), context=context.build)
+    loop = VoiceLoop(
+        wake,
+        stt,
+        lambda text: session.ask(text).text,
+        speaker.synthesize,
+        player,
+        on_state=lambda state: print(f"[{state}]"),
+    )
+    print('Say "Hey Rosie". Ctrl+C to stop.')
+    try:
+        loop.run(mic.frames())
+    except KeyboardInterrupt:
+        pass
+    finally:
+        stop.set()
+    return 0
+
+
+def run_say(text: str, voice: str | None, out: str | None, config_arg: str | None) -> int:
+    from rosie.audio import play, write_wav
+    from rosie.tts import Speaker, TTSError
+
+    config = load_config(find_config(config_arg))
+    try:
+        speaker = Speaker(voice or config.voice, config.data_dir / "models")
+        pcm, rate = speaker.synthesize(text)
+        if out:
+            print(f"saved {write_wav(Path(out), pcm, rate)}")
+        else:
+            play(pcm, rate)
+    except (TTSError, RuntimeError) as exc:
+        print(exc)
+        return 1
+    return 0
+
+
+def run_stt_bench(folder: Path, model: str, config_arg: str | None = None) -> int:
+    from rosie.stt import WhisperTranscriber, benchmark, load_samples, report
+
+    config = load_config(find_config(config_arg))
+    try:
+        transcriber = WhisperTranscriber(model, config.data_dir / "models")
+    except RuntimeError as exc:
+        print(exc)
+        return 1
+    text = report(benchmark(transcriber, load_samples(folder)), model)
+    out = config.logs_dir / "stt-bench.md"
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text(text, encoding="utf-8")
+    print(text + f"\nSaved to {out}")
     return 0
 
 
@@ -172,6 +273,18 @@ def _parser() -> argparse.ArgumentParser:
     vault.add_argument("--config", help="path to rosie.yaml")
     brief = sub.add_parser("brief", help="print today's morning brief")
     brief.add_argument("--config", help="path to rosie.yaml")
+    bench = sub.add_parser("stt-bench", help="benchmark speech-to-text on name.wav + name.txt")
+    bench.add_argument("folder")
+    bench.add_argument("--model", default="base.en")
+    bench.add_argument("--config", help="path to rosie.yaml")
+    sub.add_parser("voices", help="list Rosie's voices")
+    voice = sub.add_parser("voice", help='hands-free mode: say "Hey Rosie"')
+    voice.add_argument("--config", help="path to rosie.yaml")
+    say = sub.add_parser("say", help="speak a sentence with one of the voices")
+    say.add_argument("text")
+    say.add_argument("--voice", help="voice name (default: `voice` in rosie.yaml)")
+    say.add_argument("--out", help="save to a WAV file instead of playing")
+    say.add_argument("--config", help="path to rosie.yaml")
     review = sub.add_parser("review", help="nightly review in the terminal")
     review.add_argument("--config", help="path to rosie.yaml")
     telegram = sub.add_parser("telegram", help="answer on Telegram from your phone")
@@ -207,6 +320,20 @@ def main(argv: Sequence[str] | None = None) -> int:
     if args.command == "brief":
         print(build_brief(task_store(load_config(find_config(args.config)))), end="")
         return 0
+    if args.command == "voices":
+        from rosie.tts import VOICES
+
+        config = load_config(find_config(None))
+        for voice in VOICES.values():
+            mark = "*" if voice.name == config.voice else " "
+            print(f"{mark} {voice.name:16} {voice.description}")
+        return 0
+    if args.command == "voice":
+        return run_voice(args.config)
+    if args.command == "say":
+        return run_say(args.text, args.voice, args.out, args.config)
+    if args.command == "stt-bench":
+        return run_stt_bench(Path(args.folder), args.model, args.config)
     if args.command == "review":
         config = load_config(find_config(args.config))
         run_in_terminal(NightlyReview(task_store(config), vault_writer(config)), input, print)

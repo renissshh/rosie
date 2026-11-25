@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "rosie"
-version = "0.3.0"
+version = "0.4.0"
 description = "Rosie (R.O.S.I.E.): a personal AI chief of staff for Windows, Telegram and Obsidian."
 readme = "README.md"
 license = "MIT"
@@ -18,7 +18,9 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = ["pytest>=8.0", "ruff>=0.6"]
+dev = ["pytest>=8.0", "ruff>=0.6", "numpy>=1.26", "av>=12"]
+# Microphone and speakers (Sprint 4). Not needed for chat, Telegram or tests.
+voice = ["sounddevice>=0.4", "faster-whisper>=1.1", "sherpa-onnx>=1.10", "openwakeword>=0.6"]
 
 [project.scripts]
 rosie = "rosie.__main__:main"

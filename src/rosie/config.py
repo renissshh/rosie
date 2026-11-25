@@ -49,6 +49,7 @@ class RosieConfig(BaseModel):
     max_agent_steps: int = 8
     brief_time: str = "07:30"  # morning brief, local time (HH:MM)
     review_time: str = "22:00"  # nightly review
+    voice: str = "kokoro-emma"  # see `rosie voices`
 
     @model_validator(mode="after")
     def _derive_paths(self) -> RosieConfig:
