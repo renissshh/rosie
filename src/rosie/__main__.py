@@ -3,6 +3,7 @@
     rosie chat [--config PATH]    talk to Rosie in the terminal
     rosie doctor [--config PATH]  check the setup (Python, D:\\Rosie, Ollama, vault)
     rosie vault [--config PATH]   create rosie-vault's folders and sync it with git
+    rosie telegram [--config PATH] answer on Telegram (needs TELEGRAM_* in .env)
     rosie --version
 
 Config file lookup: --config, then the ROSIE_CONFIG env var, then
@@ -87,6 +88,33 @@ def fact_store(config: RosieConfig) -> FactStore:
     return FactStore(vault_writer(config), config.data_dir / "index" / "memory.db")
 
 
+def run_telegram(config_arg: str | None, environ: Mapping[str, str] | None = None) -> int:
+    from rosie.chat import build_session
+    from rosie.telegram import TelegramError, bot_from_env
+
+    load_dotenv(Path(".env"))
+    config = load_config(find_config(config_arg))
+    try:
+        bot = bot_from_env(os.environ if environ is None else environ)
+    except TelegramError as exc:
+        print(f"Telegram is not set up: {exc}")
+        return 1
+    reminders, stop = start_reminders(config, bot.notify)
+    context = ContextBuilder(fact_store(config), task_store(config))
+    session = build_session(
+        config, build_registry(config, reminders), context=context.build, ask_user=bot.ask
+    )
+    bot.on_message = lambda text: session.ask(text).text
+    print("Rosie is listening on Telegram. Ctrl+C to stop.")
+    try:
+        bot.run_forever(stop)
+    except KeyboardInterrupt:
+        pass
+    finally:
+        stop.set()
+    return 0
+
+
 def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="rosie", description="Rosie, your chief of staff.")
     parser.add_argument("--version", action="version", version=f"Rosie {__version__}")
@@ -97,6 +125,8 @@ def _parser() -> argparse.ArgumentParser:
     doctor.add_argument("--config", help="path to rosie.yaml")
     vault = sub.add_parser("vault", help="set up and sync rosie-vault")
     vault.add_argument("--config", help="path to rosie.yaml")
+    telegram = sub.add_parser("telegram", help="answer on Telegram from your phone")
+    telegram.add_argument("--config", help="path to rosie.yaml")
     return parser
 
 
@@ -124,6 +154,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         text, code = report(run_checks(load_config(find_config(args.config))))
         print(text)
         return code
+    if args.command == "telegram":
+        return run_telegram(args.config)
     if args.command == "vault":
         from rosie.vault import GitSync, ensure_layout
 

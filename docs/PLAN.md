@@ -41,7 +41,7 @@ Status legend: `[x]` done, `[ ]` to do.
 ## Sprint 3: Reminders + Telegram (Dec 9 to Dec 15) -> v0.3 "daily-usable"
 - [x] Scheduler, persisted jobs (own SQLite scheduler instead of APScheduler: docs/decisions/0002)
 - [x] Reminders: one-off, recurring, snooze, one follow-up then log skipped
-- [ ] Telegram bot allowlisted to one chat id **[needs you: BotFather token in .env]**
+- [x] Telegram bot allowlisted to one chat id (`docs/SETUP-TELEGRAM.md`) **[needs you: BotFather token in .env]**
 - [ ] Windows desktop notifications; route desktop vs Telegram by presence
 - [ ] Morning brief (Top 3, schedule, overdue, one avoided task)
 - [ ] Nightly review (3 questions -> daily/, drafts tomorrow)
