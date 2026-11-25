@@ -7,6 +7,9 @@ Each tool has a JSON-schema for its arguments (sent to the LLM) and a risk tier
     personal    write to rosie-vault         -> run, then tell the user
     external    affect the outside world     -> ask the user first
     system      touch the PC (apps, files)   -> allowlist + ask first
+
+A tool may also name the `action` it performs (e.g. "tasks.manage"), which the
+safety gate looks up in config/permissions.yaml.
 """
 
 from __future__ import annotations
@@ -40,6 +43,7 @@ class Tool:
     parameters: dict[str, Any] = field(
         default_factory=lambda: {"type": "object", "properties": {}, "required": []}
     )
+    action: str | None = None  # key in config/permissions.yaml
 
     def schema(self) -> dict[str, Any]:
         """The OpenAI-format function schema sent to the LLM."""
@@ -89,6 +93,7 @@ class ToolRegistry:
         *,
         tier: Tier = "read",
         parameters: dict[str, Any] | None = None,
+        action: str | None = None,
     ) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
         """Decorator form: @registry.tool("get_time", "Current local time")."""
 
@@ -96,7 +101,7 @@ class ToolRegistry:
             kwargs: dict[str, Any] = {}
             if parameters is not None:
                 kwargs["parameters"] = parameters
-            self.register(Tool(name, description, fn, tier, **kwargs))
+            self.register(Tool(name, description, fn, tier, action=action, **kwargs))
             return fn
 
         return decorate

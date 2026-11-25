@@ -6,7 +6,7 @@ Rosie is a personal AI chief of staff that lives on a Windows laptop as a floati
 answers on Telegram from the phone, and keeps her own second brain in a separate
 Obsidian vault. Say "Hey Rosie" and she tells you what matters today.
 
-> Status: **in active development** (Sprint 1 of 6). See [docs/PLAN.md](docs/PLAN.md).
+> Status: **v0.1 "talks in terminal"** ([walkthrough](docs/WALKTHROUGH-v0.1.md)). Sprint 2 of 6 next. See [docs/PLAN.md](docs/PLAN.md).
 
 ## What she will do (v1.0)
 
@@ -24,6 +24,21 @@ Obsidian vault. Say "Hey Rosie" and she tells you what matters today.
 | Separate `rosie-vault` + read-only access to your vault | Your notes are never modified |
 | All data on `D:\Rosie` (Windows) | Keeps the system drive clean |
 | Python core + Tauri UI | One language for AI/voice/bot; tiny native desktop app |
+
+## Try it
+
+First-time setup on Windows: [docs/SETUP-WINDOWS.md](docs/SETUP-WINDOWS.md), then `rosie doctor`.
+
+```bash
+ollama pull qwen3:8b      # once
+rosie chat                # /help, /tools, /reset, /exit
+```
+
+Today she can tell the date and time and read notes from your Obsidian vault
+(set `user_vault_dir` in `config/rosie.yaml`): "what's in my DBMS note?".
+
+When Rosie wants to do something that needs your yes (see `config/permissions.yaml`),
+she asks `Allow? [y/N]` in the terminal; anything but `y` means no.
 
 ## Development
 

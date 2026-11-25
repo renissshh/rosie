@@ -32,3 +32,11 @@ def test_file_log_is_masked(tmp_path):
     content = (tmp_path / "logs" / "rosie.log").read_text(encoding="utf-8")
     assert "got ***" in content
     assert TELEGRAM not in content
+
+
+def test_console_can_be_quieter_than_file(tmp_path):
+    logger = setup_logging(tmp_path, console_level=logging.WARNING)
+    console, file_handler = logger.handlers
+    assert console.level == logging.WARNING
+    assert file_handler.level == logging.NOTSET  # file keeps everything at INFO and up
+    logger.handlers.clear()

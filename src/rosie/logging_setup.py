@@ -32,7 +32,12 @@ class SecretMaskingFilter(logging.Filter):
         return True
 
 
-def setup_logging(logs_dir: Path | None = None, level: int = logging.INFO) -> logging.Logger:
+def setup_logging(
+    logs_dir: Path | None = None,
+    level: int = logging.INFO,
+    console_level: int | None = None,
+) -> logging.Logger:
+    """`console_level` lets the chat keep the terminal quiet while the file keeps INFO."""
     logger = logging.getLogger("rosie")
     logger.setLevel(level)
     logger.handlers.clear()
@@ -41,6 +46,7 @@ def setup_logging(logs_dir: Path | None = None, level: int = logging.INFO) -> lo
 
     console = logging.StreamHandler()
     console.setFormatter(fmt)
+    console.setLevel(level if console_level is None else console_level)
     console.addFilter(SecretMaskingFilter())
     logger.addHandler(console)
 

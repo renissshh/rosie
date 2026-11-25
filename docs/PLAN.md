@@ -21,13 +21,13 @@ Status legend: `[x]` done, `[ ]` to do.
 - [x] Logging with secret masking
 - [x] LLM client: OpenAI-compatible, local Ollama first, free-tier fallback
 - [x] Tool registry (JSON-schema tools, typed handlers)
-- [ ] Agent loop with step cap and tool-call log
-- [ ] Safety gate: run / ask / block tiers + tests
-- [ ] `config/SOUL.md` persona + system prompt builder
-- [ ] Terminal chat (`rosie chat`) with conversation history
-- [ ] First tools: current time/date, read a note from the user vault
-- [ ] Windows setup guide: install Python, Ollama, pull model, `D:\Rosie` **[needs you: run it after exams]**
-- [ ] Merge, tag v0.1, walkthrough doc
+- [x] Agent loop with step cap and tool-call log
+- [x] Safety gate: enforce `config/permissions.yaml` (allow / ask / deny, fail closed) + tests. Decisions: docs/decisions/0001
+- [x] `config/SOUL.md` persona + system prompt builder
+- [x] Terminal chat (`rosie chat`) with conversation history
+- [x] First tools: current time/date, read a note from the user vault
+- [x] Windows setup guide (`docs/SETUP-WINDOWS.md`) + `rosie doctor` **[needs you: run it after exams]**
+- [x] Merge, tag v0.1, walkthrough doc (`docs/WALKTHROUGH-v0.1.md`)
 
 ## Sprint 2: Memory + vault (Dec 2 to Dec 8) -> v0.2 "she remembers"
 - [ ] rosie-vault layout: daily/ tasks/ memory/ study-log/ training-log/ + git sync
