@@ -33,7 +33,7 @@ Status legend: `[x]` done, `[ ]` to do.
 - [x] rosie-vault layout: daily/ tasks/ memory/ study-log/ training-log/ + git sync
 - [x] Vault writer with path guard; tests prove no writes outside rosie-vault
 - [x] Facts store: remember / update / forget (markdown + SQLite index)
-- [ ] Tasks: add / list / complete, due dates, priorities
+- [x] Tasks: add / list / complete, due dates, priorities
 - [ ] Read-only index of the user's vault; search across both vaults
 - [ ] Context builder: relevant memories in every reply
 - [ ] Merge, tag v0.2

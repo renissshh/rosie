@@ -14,12 +14,15 @@ from __future__ import annotations
 import argparse
 import os
 from collections.abc import Mapping, Sequence
+from datetime import date
 from pathlib import Path
 
 from rosie import __version__
 from rosie.builtin_tools import register_builtin_tools
 from rosie.config import RosieConfig, load_config, load_dotenv
 from rosie.memory import FactStore, register_memory_tools
+from rosie.prompt import now_in
+from rosie.tasks import TaskStore, register_task_tools
 from rosie.tools import ToolRegistry
 from rosie.vault_writer import VaultWriter
 
@@ -39,13 +42,21 @@ def build_registry(config: RosieConfig) -> ToolRegistry:
     registry = ToolRegistry()
     register_builtin_tools(registry, config)
     register_memory_tools(registry, fact_store(config))
+    register_task_tools(registry, TaskStore(vault_writer(config), today=lambda: today_in(config)))
     return registry
 
 
-def fact_store(config: RosieConfig) -> FactStore:
+def vault_writer(config: RosieConfig) -> VaultWriter:
     forbidden = [config.user_vault_dir] if config.user_vault_dir else []
-    writer = VaultWriter(config.vault_dir, forbidden=forbidden)
-    return FactStore(writer, config.data_dir / "index" / "memory.db")
+    return VaultWriter(config.vault_dir, forbidden=forbidden)
+
+
+def today_in(config: RosieConfig) -> date:
+    return now_in(config.timezone).date()
+
+
+def fact_store(config: RosieConfig) -> FactStore:
+    return FactStore(vault_writer(config), config.data_dir / "index" / "memory.db")
 
 
 def _parser() -> argparse.ArgumentParser:
