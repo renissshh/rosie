@@ -53,7 +53,7 @@ Status legend: `[x]` done, `[ ]` to do.
 - [x] Text-to-speech (sherpa-onnx), choose Rosie's voice (default `kokoro-emma`; audition with `rosie say`)
 - [x] "Hey Rosie" wake word: openWakeWord + spoken-name fallback (`docs/VOICE.md`) **[needs you: voice samples + training, after exams]**
 - [x] Wake -> listen -> think -> speak loop, barge-in (`rosie voice`)
-- [ ] Telegram voice notes in/out
+- [x] Telegram voice notes in/out
 - [ ] Merge, tag v0.4
 
 ## Sprint 5: Orb UI + autostart (Dec 23 to Dec 29) -> v0.5 "opens at login"

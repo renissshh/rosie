@@ -134,6 +134,24 @@ def telegram_reply(text: str, review: NightlyReview, session) -> str:
         return "I can't reach my brain right now (is Ollama running on the laptop?)."
 
 
+def add_voice_notes(bot, config: RosieConfig) -> bool:
+    """Voice notes in and out on Telegram, if the [voice] extras are installed."""
+    from rosie.stt import WhisperTranscriber
+    from rosie.tts import Speaker, TTSError
+    from rosie.voice_notes import decode_to_pcm, encode_ogg_opus
+
+    models = config.data_dir / "models"
+    try:
+        stt = WhisperTranscriber("base.en", models)
+        speaker = Speaker(config.voice, models)
+    except (RuntimeError, TTSError) as exc:
+        print(f"Voice notes off: {exc}")
+        return False
+    bot.hear = lambda data: stt.transcribe(decode_to_pcm(data)).text
+    bot.speak = lambda text: encode_ogg_opus(*speaker.synthesize(text))
+    return True
+
+
 def run_telegram(config_arg: str | None, environ: Mapping[str, str] | None = None) -> int:
     from rosie.chat import build_session
     from rosie.telegram import TelegramError, bot_from_env
@@ -154,6 +172,7 @@ def run_telegram(config_arg: str | None, environ: Mapping[str, str] | None = Non
         config, build_registry(config, reminders), context=context.build, ask_user=bot.ask
     )
     bot.on_message = lambda text: telegram_reply(text, review, session)
+    add_voice_notes(bot, config)
     print("Rosie is listening on Telegram. Ctrl+C to stop.")
     try:
         bot.run_forever(stop)

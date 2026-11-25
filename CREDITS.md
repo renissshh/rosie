@@ -17,3 +17,4 @@ contributed ideas, not code.
 | [python-sounddevice](https://github.com/spatialaudio/python-sounddevice) | MIT | Dependency (optional, `[voice]`): microphone capture |
 | [Kokoro-82M](https://huggingface.co/hexgrad/Kokoro-82M) via sherpa-onnx | Apache-2.0 | Voice model (downloaded at runtime, not in the repo) |
 | Piper voices via sherpa-onnx | see the model's folder | Optional small voice (downloaded at runtime, not in the repo) |
+| [PyAV](https://github.com/PyAV-Org/PyAV) | BSD-3-Clause | Dependency (with faster-whisper): decode/encode Telegram voice notes |

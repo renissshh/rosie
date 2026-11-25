@@ -167,3 +167,80 @@ def test_cli_without_token_explains(tmp_path, monkeypatch, capsys):
     monkeypatch.setenv("ROSIE_DATA_DIR", str(tmp_path / "Rosie"))
     assert run_telegram(None, environ={}) == 1
     assert "TELEGRAM_BOT_TOKEN is not set" in capsys.readouterr().out
+
+
+class VoiceTelegram(FakeTelegram):
+    """Adds getFile, file download and sendVoice to the fake Bot API."""
+
+    def __init__(self):
+        super().__init__()
+        self.voices = []
+
+    def push_voice(self, file_id="v1", chat=ME):
+        self.updates.append(
+            {
+                "update_id": self.next_id,
+                "message": {"chat": {"id": chat}, "voice": {"file_id": file_id}},
+            }
+        )
+        self.next_id += 1
+
+    def handler(self, request):
+        path = request.url.path
+        if path.endswith("/getFile"):
+            file_id = json.loads(request.content)["file_id"]
+            return httpx.Response(
+                200, json={"ok": True, "result": {"file_path": f"voice/{file_id}.oga"}}
+            )
+        if "/file/bot" in path:
+            return httpx.Response(200, content=b"OGG:" + path.rsplit("/", 1)[-1].encode())
+        if path.endswith("/sendVoice"):
+            self.voices.append(request.content)
+            return httpx.Response(200, json={"ok": True, "result": {}})
+        return super().handler(request)
+
+
+def test_voice_note_in_text_and_voice_out():
+    tg = VoiceTelegram()
+    tg.push_voice("abc")
+    bot = tg.bot(on_message=lambda text: f"Done: {text}")
+    bot.hear = lambda data: "remind me at nine" if data == b"OGG:abc.oga" else "?"
+    bot.speak = lambda text: b"OPUS(" + text.encode() + b")"
+    assert bot.poll_once() == 1
+    assert tg.sent == [(ME, 'You said: "remind me at nine"\n\nDone: remind me at nine')]
+    assert b"OPUS(Done: remind me at nine)" in tg.voices[0]
+    assert b'name="chat_id"' in tg.voices[0]
+
+
+def test_voice_note_without_voice_extras():
+    tg = VoiceTelegram()
+    tg.push_voice()
+    assert tg.bot(on_message=str.upper).poll_once() == 0
+    assert "can't listen to voice notes yet" in tg.sent[0][1]
+
+
+def test_unhearable_voice_note_does_not_crash():
+    tg = VoiceTelegram()
+    tg.push_voice()
+    bot = tg.bot(on_message=str.upper)
+
+    def broken(data):
+        raise RuntimeError("bad codec")
+
+    bot.hear = broken
+    assert bot.poll_once() == 0
+    assert "couldn't hear" in tg.sent[0][1]
+
+
+def test_failed_voice_reply_still_sends_text():
+    tg = VoiceTelegram()
+    tg.push_voice()
+    bot = tg.bot(on_message=lambda text: "ok")
+    bot.hear = lambda data: "hi"
+
+    def broken(text):
+        raise RuntimeError("no model")
+
+    bot.speak = broken
+    bot.poll_once()
+    assert tg.sent and tg.voices == []
