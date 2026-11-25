@@ -33,6 +33,7 @@ Step-by-step tour of one message: [WALKTHROUGH-v0.1.md](WALKTHROUGH-v0.1.md).
 | `rosie.memory` | Facts: one markdown file per topic in `memory/`, Obsidian block ids (`^a1b2c3`), rebuildable SQLite FTS5 index; remember / update / forget / recall tools. |
 | `rosie.tasks` | Tasks in `tasks/tasks.md`, Obsidian Tasks format (⏫🔼🔽 priority, 📅 due, ✅ done); due dates like "friday" or "in 3 days"; add / list / complete tools. |
 | `rosie.search` | FTS5 index of both vaults in `D:\Rosie\index\notes.db`, refreshed incrementally by size/mtime; `search_notes` tool with snippets. |
+| `rosie.context` | Before each reply: facts matching the message (max 5) + tasks due today/overdue go into the system prompt; failures only drop the context. |
 
 ## Invariants (each one has a test)
 

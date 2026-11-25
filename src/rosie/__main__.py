@@ -20,6 +20,7 @@ from pathlib import Path
 from rosie import __version__
 from rosie.builtin_tools import register_builtin_tools
 from rosie.config import RosieConfig, load_config, load_dotenv
+from rosie.context import ContextBuilder
 from rosie.memory import FactStore, register_memory_tools
 from rosie.prompt import now_in
 from rosie.search import NoteIndex, register_search_tool
@@ -43,7 +44,7 @@ def build_registry(config: RosieConfig) -> ToolRegistry:
     registry = ToolRegistry()
     register_builtin_tools(registry, config)
     register_memory_tools(registry, fact_store(config))
-    register_task_tools(registry, TaskStore(vault_writer(config), today=lambda: today_in(config)))
+    register_task_tools(registry, task_store(config))
     register_search_tool(registry, note_index(config))
     return registry
 
@@ -58,6 +59,10 @@ def note_index(config: RosieConfig) -> NoteIndex:
 def vault_writer(config: RosieConfig) -> VaultWriter:
     forbidden = [config.user_vault_dir] if config.user_vault_dir else []
     return VaultWriter(config.vault_dir, forbidden=forbidden)
+
+
+def task_store(config: RosieConfig) -> TaskStore:
+    return TaskStore(vault_writer(config), today=lambda: today_in(config))
 
 
 def today_in(config: RosieConfig) -> date:
@@ -91,7 +96,8 @@ def main(argv: Sequence[str] | None = None) -> int:
 
         load_dotenv(Path(".env"))
         config = load_config(find_config(args.config))
-        run_chat(build_session(config, build_registry(config)))
+        context = ContextBuilder(fact_store(config), task_store(config))
+        run_chat(build_session(config, build_registry(config), context=context.build))
     if args.command == "doctor":
         from rosie.doctor import report, run_checks
 

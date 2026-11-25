@@ -35,7 +35,7 @@ Status legend: `[x]` done, `[ ]` to do.
 - [x] Facts store: remember / update / forget (markdown + SQLite index)
 - [x] Tasks: add / list / complete, due dates, priorities
 - [x] Read-only index of the user's vault; search across both vaults
-- [ ] Context builder: relevant memories in every reply
+- [x] Context builder: relevant memories in every reply
 - [ ] Merge, tag v0.2
 
 ## Sprint 3: Reminders + Telegram (Dec 9 to Dec 15) -> v0.3 "daily-usable"

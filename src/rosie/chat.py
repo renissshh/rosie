@@ -39,18 +39,21 @@ class ChatSession:
         timezone: str = "Asia/Kolkata",
         max_messages: int = 40,
         now: Callable[[], datetime] | None = None,
+        context: Callable[[str], str] | None = None,
     ) -> None:
         self.agent = agent
         self.soul = soul
         self.max_messages = max_messages
         self._now = now or (lambda: now_in(timezone))
+        self.context = context
         self.history: list[dict[str, Any]] = []
 
-    def system_prompt(self) -> str:
-        return build_system_prompt(self.soul, self._now(), self.agent.registry.names())
+    def system_prompt(self, message: str = "") -> str:
+        extra = self.context(message) if self.context else ""
+        return build_system_prompt(self.soul, self._now(), self.agent.registry.names(), extra)
 
     def ask(self, text: str) -> AgentResult:
-        messages = [{"role": "system", "content": self.system_prompt()}, *self.history]
+        messages = [{"role": "system", "content": self.system_prompt(text)}, *self.history]
         messages.append({"role": "user", "content": text})
         # If the model fails (LLMError), history is left untouched: no half-finished turn.
         result = self.agent.run(messages)
@@ -124,6 +127,7 @@ def build_session(
     registry: ToolRegistry,
     read: Reader = input,
     write: Writer = print,
+    context: Callable[[str], str] | None = None,
 ) -> ChatSession:
     """Wire the real pieces together: local-first LLM, safety gate, tool log, persona."""
     setup_logging(config.logs_dir, console_level=logging.WARNING)
@@ -134,4 +138,4 @@ def build_session(
         gate=SafetyGate(PermissionPolicy.load(), make_asker(read, write)),
         call_log=ToolCallLog(config.logs_dir / "tool_calls.jsonl"),
     )
-    return ChatSession(agent, load_soul(config.data_dir), config.timezone)
+    return ChatSession(agent, load_soul(config.data_dir), config.timezone, context=context)

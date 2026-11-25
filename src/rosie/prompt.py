@@ -3,7 +3,7 @@
 Rosie's personality lives in a plain markdown file, `SOUL.md`, so it can be edited
 without touching code (idea from Hermes Agent, see CREDITS.md). The prompt is:
 
-    SOUL.md  +  current date/time  +  the tools she has right now
+    SOUL.md  +  current date/time  +  relevant memories/tasks  +  the tools she has
 
 Lookup order for SOUL.md: `<data_dir>/SOUL.md` (the user's own edit, e.g.
 D:\\Rosie\\SOUL.md), then the repo's `config/SOUL.md`, then a one-line fallback.
@@ -41,8 +41,11 @@ def build_system_prompt(
     soul: str,
     now: datetime,
     tool_names: Iterable[str] = (),
+    context: str = "",
 ) -> str:
     parts = [soul.strip(), f"## Right now\nIt is {format_now(now)}."]
+    if context.strip():
+        parts.append(context.strip())
     names = list(tool_names)
     if names:
         parts.append("## Tools available\n" + ", ".join(names))
