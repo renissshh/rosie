@@ -22,6 +22,7 @@ from rosie.builtin_tools import register_builtin_tools
 from rosie.config import RosieConfig, load_config, load_dotenv
 from rosie.memory import FactStore, register_memory_tools
 from rosie.prompt import now_in
+from rosie.search import NoteIndex, register_search_tool
 from rosie.tasks import TaskStore, register_task_tools
 from rosie.tools import ToolRegistry
 from rosie.vault_writer import VaultWriter
@@ -43,7 +44,15 @@ def build_registry(config: RosieConfig) -> ToolRegistry:
     register_builtin_tools(registry, config)
     register_memory_tools(registry, fact_store(config))
     register_task_tools(registry, TaskStore(vault_writer(config), today=lambda: today_in(config)))
+    register_search_tool(registry, note_index(config))
     return registry
+
+
+def note_index(config: RosieConfig) -> NoteIndex:
+    vaults = {"rosie": config.vault_dir}
+    if config.user_vault_dir is not None:
+        vaults["yours"] = config.user_vault_dir
+    return NoteIndex(config.data_dir / "index" / "notes.db", vaults)
 
 
 def vault_writer(config: RosieConfig) -> VaultWriter:
