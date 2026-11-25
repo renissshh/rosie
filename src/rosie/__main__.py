@@ -6,6 +6,7 @@
     rosie telegram [--config PATH] answer on Telegram (needs TELEGRAM_* in .env)
     rosie brief [--config PATH]   print today's morning brief
     rosie review [--config PATH]  nightly review: three questions in the terminal
+    rosie stt-bench FOLDER [--model base.en]  speech-to-text speed/accuracy on recordings
     rosie --version
 
 Config file lookup: --config, then the ROSIE_CONFIG env var, then
@@ -160,6 +161,23 @@ def run_telegram(config_arg: str | None, environ: Mapping[str, str] | None = Non
     return 0
 
 
+def run_stt_bench(folder: Path, model: str, config_arg: str | None = None) -> int:
+    from rosie.stt import WhisperTranscriber, benchmark, load_samples, report
+
+    config = load_config(find_config(config_arg))
+    try:
+        transcriber = WhisperTranscriber(model, config.data_dir / "models")
+    except RuntimeError as exc:
+        print(exc)
+        return 1
+    text = report(benchmark(transcriber, load_samples(folder)), model)
+    out = config.logs_dir / "stt-bench.md"
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text(text, encoding="utf-8")
+    print(text + f"\nSaved to {out}")
+    return 0
+
+
 def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="rosie", description="Rosie, your chief of staff.")
     parser.add_argument("--version", action="version", version=f"Rosie {__version__}")
@@ -172,6 +190,10 @@ def _parser() -> argparse.ArgumentParser:
     vault.add_argument("--config", help="path to rosie.yaml")
     brief = sub.add_parser("brief", help="print today's morning brief")
     brief.add_argument("--config", help="path to rosie.yaml")
+    bench = sub.add_parser("stt-bench", help="benchmark speech-to-text on name.wav + name.txt")
+    bench.add_argument("folder")
+    bench.add_argument("--model", default="base.en")
+    bench.add_argument("--config", help="path to rosie.yaml")
     review = sub.add_parser("review", help="nightly review in the terminal")
     review.add_argument("--config", help="path to rosie.yaml")
     telegram = sub.add_parser("telegram", help="answer on Telegram from your phone")
@@ -207,6 +229,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     if args.command == "brief":
         print(build_brief(task_store(load_config(find_config(args.config)))), end="")
         return 0
+    if args.command == "stt-bench":
+        return run_stt_bench(Path(args.folder), args.model, args.config)
     if args.command == "review":
         config = load_config(find_config(args.config))
         run_in_terminal(NightlyReview(task_store(config), vault_writer(config)), input, print)
