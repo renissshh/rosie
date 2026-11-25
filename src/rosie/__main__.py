@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import argparse
 import os
+import threading
 from collections.abc import Mapping, Sequence
 from datetime import date
 from pathlib import Path
@@ -23,6 +24,8 @@ from rosie.config import RosieConfig, load_config, load_dotenv
 from rosie.context import ContextBuilder
 from rosie.memory import FactStore, register_memory_tools
 from rosie.prompt import now_in
+from rosie.reminders import Reminders, register_reminder_tools
+from rosie.scheduler import Scheduler
 from rosie.search import NoteIndex, register_search_tool
 from rosie.tasks import TaskStore, register_task_tools
 from rosie.tools import ToolRegistry
@@ -39,14 +42,25 @@ def find_config(arg: str | None, environ: Mapping[str, str] | None = None) -> Pa
     return default if default.is_file() else None
 
 
-def build_registry(config: RosieConfig) -> ToolRegistry:
-    """All tools Rosie has today."""
+def build_registry(config: RosieConfig, reminders: Reminders | None = None) -> ToolRegistry:
+    """All tools Rosie has today. Reminder tools need a running scheduler, so they're optional."""
     registry = ToolRegistry()
     register_builtin_tools(registry, config)
     register_memory_tools(registry, fact_store(config))
     register_task_tools(registry, task_store(config))
     register_search_tool(registry, note_index(config))
+    if reminders is not None:
+        register_reminder_tools(registry, reminders)
     return registry
+
+
+def start_reminders(config: RosieConfig, notify) -> tuple[Reminders, threading.Event]:
+    """Scheduler thread for the chat session. Set the returned event to stop it."""
+    scheduler = Scheduler(config.data_dir / "index" / "scheduler.db", config.timezone)
+    reminders = Reminders(scheduler, notify, vault_writer(config), config.timezone)
+    stop = threading.Event()
+    threading.Thread(target=scheduler.run_forever, args=(stop,), daemon=True).start()
+    return reminders, stop
 
 
 def note_index(config: RosieConfig) -> NoteIndex:
@@ -97,7 +111,12 @@ def main(argv: Sequence[str] | None = None) -> int:
         load_dotenv(Path(".env"))
         config = load_config(find_config(args.config))
         context = ContextBuilder(fact_store(config), task_store(config))
-        run_chat(build_session(config, build_registry(config), context=context.build))
+        reminders, stop = start_reminders(config, lambda title, text: print(f"\n[{title}] {text}"))
+        registry = build_registry(config, reminders)
+        try:
+            run_chat(build_session(config, registry, context=context.build))
+        finally:
+            stop.set()
     if args.command == "doctor":
         from rosie.doctor import report, run_checks
 

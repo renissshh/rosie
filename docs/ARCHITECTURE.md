@@ -35,6 +35,7 @@ Tours: [v0.1 one message end to end](WALKTHROUGH-v0.1.md), [v0.2 memory, tasks, 
 | `rosie.search` | FTS5 index of both vaults in `D:\Rosie\index\notes.db`, refreshed incrementally by size/mtime; `search_notes` tool with snippets. |
 | `rosie.context` | Before each reply: facts matching the message (max 5) + tasks due today/overdue go into the system prompt; failures only drop the context. |
 | `rosie.scheduler` | Jobs in SQLite (once, daily, weekly, every N min), IST recurrence, missed runs merged, crash-isolated handlers. See decision 0002. |
+| `rosie.reminders` | One-off and repeating reminders ("tomorrow 7am", "weekdays"); fire, one follow-up after 15 min, then "skipped" goes to today's daily note; done / snooze / cancel. |
 
 ## Invariants (each one has a test)
 
