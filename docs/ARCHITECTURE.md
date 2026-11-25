@@ -21,9 +21,11 @@
 | `rosie.llm` | One OpenAI-compatible client for Ollama and cloud; `FallbackLLM` is local-first. |
 | `rosie.tools` | Tool registry: JSON-schema arguments, risk tier per tool. |
 | `rosie.agent` | Agent loop: LLM -> tools -> LLM, step cap (`max_agent_steps`), gate before every call, JSON-lines tool-call log. |
+| `rosie.safety` | Safety gate: enforces `config/permissions.yaml` (allow / ask / deny), tier floor for external/system tools, fails closed. |
 
 ## Invariants (each one has a test)
 
 1. Rosie never writes outside `rosie-vault`. (config overlap guard today; vault writer path guard in Sprint 2)
 2. Secrets never reach logs.
 3. The cloud model is only called when the local model fails.
+4. Denied actions never run, even if the model requests them directly; unknown actions and a broken policy file mean "ask".
