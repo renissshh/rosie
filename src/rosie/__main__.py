@@ -8,6 +8,7 @@
     rosie review [--config PATH]  nightly review: three questions in the terminal
     rosie stt-bench FOLDER [--model base.en]  speech-to-text speed/accuracy on recordings
     rosie voices                  list Rosie's voices
+    rosie voice [--config PATH]   hands-free: "Hey Rosie", then talk (needs [voice])
     rosie say TEXT [--voice NAME] [--out FILE.wav]  hear (or save) a voice
     rosie --version
 
@@ -163,6 +164,49 @@ def run_telegram(config_arg: str | None, environ: Mapping[str, str] | None = Non
     return 0
 
 
+def run_voice(config_arg: str | None) -> int:
+    """Wire microphone, wake word, speech-to-text, the agent and the voice together."""
+    from rosie.audio import Microphone
+    from rosie.chat import build_session
+    from rosie.stt import WhisperTranscriber
+    from rosie.tts import Speaker, TTSError
+    from rosie.voice_loop import SoundDevicePlayer, VoiceLoop
+    from rosie.wakeword import OpenWakeWord, SpokenName
+
+    load_dotenv(Path(".env"))
+    config = load_config(find_config(config_arg))
+    models = config.data_dir / "models"
+    try:
+        mic, player = Microphone(), SoundDevicePlayer()
+        stt = WhisperTranscriber("base.en", models)
+        speaker = Speaker(config.voice, models)
+        trained = models / "hey_rosie.onnx"
+        wake = OpenWakeWord(str(trained)) if trained.is_file() else SpokenName(stt)
+    except (RuntimeError, TTSError, ImportError) as exc:
+        print(exc)
+        return 1
+    terminal = lambda title, text: print(f"[{title}] {text}")  # noqa: E731
+    reminders, stop = start_reminders(config, Router(desktop_or_none(), terminal))
+    context = ContextBuilder(fact_store(config), task_store(config))
+    session = build_session(config, build_registry(config, reminders), context=context.build)
+    loop = VoiceLoop(
+        wake,
+        stt,
+        lambda text: session.ask(text).text,
+        speaker.synthesize,
+        player,
+        on_state=lambda state: print(f"[{state}]"),
+    )
+    print('Say "Hey Rosie". Ctrl+C to stop.')
+    try:
+        loop.run(mic.frames())
+    except KeyboardInterrupt:
+        pass
+    finally:
+        stop.set()
+    return 0
+
+
 def run_say(text: str, voice: str | None, out: str | None, config_arg: str | None) -> int:
     from rosie.audio import play, write_wav
     from rosie.tts import Speaker, TTSError
@@ -215,6 +259,8 @@ def _parser() -> argparse.ArgumentParser:
     bench.add_argument("--model", default="base.en")
     bench.add_argument("--config", help="path to rosie.yaml")
     sub.add_parser("voices", help="list Rosie's voices")
+    voice = sub.add_parser("voice", help='hands-free mode: say "Hey Rosie"')
+    voice.add_argument("--config", help="path to rosie.yaml")
     say = sub.add_parser("say", help="speak a sentence with one of the voices")
     say.add_argument("text")
     say.add_argument("--voice", help="voice name (default: `voice` in rosie.yaml)")
@@ -263,6 +309,8 @@ def main(argv: Sequence[str] | None = None) -> int:
             mark = "*" if voice.name == config.voice else " "
             print(f"{mark} {voice.name:16} {voice.description}")
         return 0
+    if args.command == "voice":
+        return run_voice(args.config)
     if args.command == "say":
         return run_say(args.text, args.voice, args.out, args.config)
     if args.command == "stt-bench":

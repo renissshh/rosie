@@ -52,7 +52,7 @@ Status legend: `[x]` done, `[ ]` to do.
 - [x] Speech-to-text (faster-whisper) + latency benchmark (`rosie stt-bench`)
 - [x] Text-to-speech (sherpa-onnx), choose Rosie's voice (default `kokoro-emma`; audition with `rosie say`)
 - [x] "Hey Rosie" wake word: openWakeWord + spoken-name fallback (`docs/VOICE.md`) **[needs you: voice samples + training, after exams]**
-- [ ] Wake -> listen -> think -> speak loop, barge-in
+- [x] Wake -> listen -> think -> speak loop, barge-in (`rosie voice`)
 - [ ] Telegram voice notes in/out
 - [ ] Merge, tag v0.4
 

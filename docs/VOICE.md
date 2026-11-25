@@ -5,7 +5,11 @@ mic (30 ms frames) -> wake word -> VAD utterance -> faster-whisper -> agent -> s
    rosie.audio        rosie.wakeword  rosie.audio      rosie.stt               rosie.tts
 ```
 
-Install once: `.venv\Scripts\python -m pip install -e ".[voice]"`.
+Install once: `.venv\Scripts\python -m pip install -e ".[voice]"`, then run
+`.venv\Scripts\rosie voice` and say "Hey Rosie, what's on today?".
+
+Talk over her and she stops and listens (barge-in). Headphones help: with speakers, her
+own voice reaches the mic, so barge-in needs you to speak up a little.
 
 ## "Hey Rosie" wake word
 

@@ -97,6 +97,11 @@ class UtteranceDetector:
         self._silence = 0
         self._frames: list[bytes] = []
 
+    @property
+    def in_utterance(self) -> bool:
+        """True while someone is speaking (an utterance has started but not ended)."""
+        return self._speaking
+
     def feed(self, frame: bytes) -> Utterance | None:
         """Feed one frame; returns an Utterance when one has just ended."""
         speech = self.vad.is_speech(frame)

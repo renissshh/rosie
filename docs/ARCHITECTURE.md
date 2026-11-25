@@ -44,6 +44,7 @@ Tours: [v0.1 one message end to end](WALKTHROUGH-v0.1.md), [v0.2 memory, tasks, 
 | `rosie.stt` | faster-whisper on CPU (int8, beam 1, `base.en`), models in `D:\Rosie\models`; `rosie stt-bench` reports latency, real-time factor and word error rate. |
 | `rosie.tts` | sherpa-onnx voices (Kokoro, Piper), default British "kokoro-emma"; models downloaded once to `D:\Rosie\models` with tarfile's safe filter; `rosie voices`, `rosie say`. |
 | `rosie.wakeword` | "Hey Rosie": openWakeWord model (80 ms chunks, threshold, cooldown) or, untrained, the spoken-name fallback (transcribe utterance, wake if it starts with her name, keep the rest as the request). |
+| `rosie.voice_loop` | `rosie voice`: idle -> listening -> thinking -> speaking state machine fed 30 ms frames; 6 s listen timeout; barge-in after ~180 ms of loud speech while she talks; state callback for the orb. |
 
 ## Invariants (each one has a test)
 
