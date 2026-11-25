@@ -1,4 +1,6 @@
-# Architecture (v0.0, updated each sprint)
+# Architecture (v0.1, updated each sprint)
+
+Step-by-step tour of one message: [WALKTHROUGH-v0.1.md](WALKTHROUGH-v0.1.md).
 
 ```
  Laptop: orb + voice        LLM API (Ollama local / free-tier cloud)        Phone: Telegram

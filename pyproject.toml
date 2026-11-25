@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "rosie"
-version = "0.0.1"
+version = "0.1.0"
 description = "Rosie (R.O.S.I.E.): a personal AI chief of staff for Windows, Telegram and Obsidian."
 readme = "README.md"
 license = "MIT"

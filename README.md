@@ -6,7 +6,7 @@ Rosie is a personal AI chief of staff that lives on a Windows laptop as a floati
 answers on Telegram from the phone, and keeps her own second brain in a separate
 Obsidian vault. Say "Hey Rosie" and she tells you what matters today.
 
-> Status: **in active development** (Sprint 1 of 6). See [docs/PLAN.md](docs/PLAN.md).
+> Status: **v0.1 "talks in terminal"** ([walkthrough](docs/WALKTHROUGH-v0.1.md)). Sprint 2 of 6 next. See [docs/PLAN.md](docs/PLAN.md).
 
 ## What she will do (v1.0)
 

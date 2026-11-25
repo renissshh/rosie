@@ -27,7 +27,7 @@ Status legend: `[x]` done, `[ ]` to do.
 - [x] Terminal chat (`rosie chat`) with conversation history
 - [x] First tools: current time/date, read a note from the user vault
 - [x] Windows setup guide (`docs/SETUP-WINDOWS.md`) + `rosie doctor` **[needs you: run it after exams]**
-- [ ] Merge, tag v0.1, walkthrough doc
+- [x] Merge, tag v0.1, walkthrough doc (`docs/WALKTHROUGH-v0.1.md`)
 
 ## Sprint 2: Memory + vault (Dec 2 to Dec 8) -> v0.2 "she remembers"
 - [ ] rosie-vault layout: daily/ tasks/ memory/ study-log/ training-log/ + git sync
