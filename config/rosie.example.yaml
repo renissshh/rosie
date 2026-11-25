@@ -1,0 +1,27 @@
+# Copy to config/rosie.yaml and edit. Secrets go in .env, never here.
+
+# Everything Rosie stores lives here (D: drive on Windows).
+data_dir: "D:/Rosie"
+
+# Rosie's own Obsidian vault. Default: D:/Rosie/rosie-vault
+# vault_dir: "D:/Rosie/rosie-vault"
+
+# Your own Obsidian vault. Rosie only READS it, never writes.
+# user_vault_dir: "D:/Obsidian/MyVault"
+
+timezone: "Asia/Kolkata"
+
+# Primary brain: a free local model via Ollama (16 GB RAM is enough for 8B models).
+llm:
+  provider: ollama
+  model: "qwen3:8b"
+  base_url: "http://localhost:11434/v1"
+
+# Optional fallback: any free-tier, OpenAI-compatible cloud API.
+# fallback_llm:
+#   provider: openai_compatible
+#   model: "gemini-2.5-flash"
+#   base_url: "https://generativelanguage.googleapis.com/v1beta/openai/"
+#   api_key_env: "GEMINI_API_KEY"
+
+max_agent_steps: 8
