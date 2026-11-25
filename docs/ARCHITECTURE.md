@@ -19,6 +19,8 @@
 | `rosie.config` | Defaults < `rosie.yaml` < `ROSIE_*` env. `D:\Rosie` on Windows. Refuses overlapping vaults. |
 | `rosie.logging_setup` | Console + rotating file log; masks tokens and API keys. |
 | `rosie.llm` | One OpenAI-compatible client for Ollama and cloud; `FallbackLLM` is local-first. |
+| `rosie.tools` | Tool registry: JSON-schema arguments, risk tier per tool. |
+| `rosie.agent` | Agent loop: LLM -> tools -> LLM, step cap (`max_agent_steps`), gate before every call, JSON-lines tool-call log. |
 
 ## Invariants (each one has a test)
 
