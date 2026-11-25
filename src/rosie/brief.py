@@ -102,12 +102,5 @@ class MorningBrief:
         """Make sure exactly one daily brief job exists (idempotent across restarts)."""
         if self.reminders is None:
             raise ValueError("scheduling the brief needs the reminders scheduler")
-        scheduler = self.reminders.scheduler
-        scheduler.on(BRIEF_JOB, self.run)
-        rule = f"daily@{at}"
-        existing = [j for j in scheduler.jobs() if j.kind == BRIEF_JOB]
-        if [j.rule for j in existing] == [rule]:
-            return
-        for job in existing:
-            scheduler.cancel(job.id)
-        scheduler.add(BRIEF_JOB, rule)
+        self.reminders.scheduler.on(BRIEF_JOB, self.run)
+        self.reminders.scheduler.ensure_daily(BRIEF_JOB, at)

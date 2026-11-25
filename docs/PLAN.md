@@ -44,7 +44,7 @@ Status legend: `[x]` done, `[ ]` to do.
 - [x] Telegram bot allowlisted to one chat id (`docs/SETUP-TELEGRAM.md`) **[needs you: BotFather token in .env]**
 - [x] Windows desktop notifications; route desktop vs Telegram by presence
 - [x] Morning brief (Top 3, schedule, overdue, one avoided task)
-- [ ] Nightly review (3 questions -> daily/, drafts tomorrow)
+- [x] Nightly review (3 questions -> daily/, drafts tomorrow)
 - [ ] Merge, tag v0.3
 
 ## Sprint 4: Voice (Dec 16 to Dec 22) -> v0.4 "hands-free"

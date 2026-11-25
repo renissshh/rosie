@@ -152,6 +152,16 @@ class Scheduler:
             )
         return job
 
+    def ensure_daily(self, kind: str, at: str) -> Job:
+        """Exactly one daily job of this kind at HH:MM (safe to call on every start)."""
+        rule = f"daily@{at}"
+        existing = [j for j in self.jobs() if j.kind == kind]
+        if [j.rule for j in existing] == [rule]:
+            return existing[0]
+        for job in existing:
+            self.cancel(job.id)
+        return self.add(kind, rule)
+
     def jobs(self) -> list[Job]:
         with closing(self._connect()) as db:
             rows = db.execute("SELECT * FROM jobs ORDER BY next_run").fetchall()

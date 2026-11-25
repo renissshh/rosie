@@ -5,6 +5,7 @@
     rosie vault [--config PATH]   create rosie-vault's folders and sync it with git
     rosie telegram [--config PATH] answer on Telegram (needs TELEGRAM_* in .env)
     rosie brief [--config PATH]   print today's morning brief
+    rosie review [--config PATH]  nightly review: three questions in the terminal
     rosie --version
 
 Config file lookup: --config, then the ROSIE_CONFIG env var, then
@@ -16,7 +17,7 @@ from __future__ import annotations
 import argparse
 import os
 import threading
-from collections.abc import Mapping, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from datetime import date
 from pathlib import Path
 
@@ -29,6 +30,7 @@ from rosie.memory import FactStore, register_memory_tools
 from rosie.notify import DesktopNotifier, Router
 from rosie.prompt import now_in
 from rosie.reminders import Reminders, register_reminder_tools
+from rosie.review import REVIEW_JOB, NightlyReview, run_in_terminal
 from rosie.scheduler import Scheduler
 from rosie.search import NoteIndex, register_search_tool
 from rosie.tasks import TaskStore, register_task_tools
@@ -64,13 +66,28 @@ def desktop_or_none() -> DesktopNotifier | None:
     return desktop if desktop.available else None
 
 
-def start_reminders(config: RosieConfig, notify) -> tuple[Reminders, threading.Event]:
-    """Scheduler thread for the chat session. Set the returned event to stop it."""
+def start_reminders(
+    config: RosieConfig, notify, on_review: Callable[[], None] | None = None
+) -> tuple[Reminders, threading.Event]:
+    """Scheduler thread with reminders, morning brief and nightly review. Set the event to stop.
+
+    `on_review` starts the review where it can be answered (Telegram); without it Rosie
+    just reminds you to run `rosie review`.
+    """
     scheduler = Scheduler(config.data_dir / "index" / "scheduler.db", config.timezone)
     reminders = Reminders(scheduler, notify, vault_writer(config), config.timezone)
     MorningBrief(task_store(config), vault_writer(config), notify, reminders).schedule(
         config.brief_time
     )
+    scheduler.on(
+        REVIEW_JOB,
+        lambda job: (
+            on_review()
+            if on_review
+            else notify("Rosie", "Time for your nightly review: run `rosie review`.")
+        ),
+    )
+    scheduler.ensure_daily(REVIEW_JOB, config.review_time)
     stop = threading.Event()
     threading.Thread(target=scheduler.run_forever, args=(stop,), daemon=True).start()
     return reminders, stop
@@ -100,6 +117,15 @@ def fact_store(config: RosieConfig) -> FactStore:
     return FactStore(vault_writer(config), config.data_dir / "index" / "memory.db")
 
 
+def telegram_reply(text: str, review: NightlyReview, session) -> str:
+    """While the nightly review is running, messages are its answers; otherwise chat."""
+    if review.active:
+        return review.answer(text)
+    if text.strip().lower() in {"/review", "review"}:
+        return review.start()
+    return session.ask(text).text
+
+
 def run_telegram(config_arg: str | None, environ: Mapping[str, str] | None = None) -> int:
     from rosie.chat import build_session
     from rosie.telegram import TelegramError, bot_from_env
@@ -111,12 +137,15 @@ def run_telegram(config_arg: str | None, environ: Mapping[str, str] | None = Non
     except TelegramError as exc:
         print(f"Telegram is not set up: {exc}")
         return 1
-    reminders, stop = start_reminders(config, Router(desktop_or_none(), bot.notify))
+    review = NightlyReview(task_store(config), vault_writer(config))
+    reminders, stop = start_reminders(
+        config, Router(desktop_or_none(), bot.notify), on_review=lambda: bot.send(review.start())
+    )
     context = ContextBuilder(fact_store(config), task_store(config))
     session = build_session(
         config, build_registry(config, reminders), context=context.build, ask_user=bot.ask
     )
-    bot.on_message = lambda text: session.ask(text).text
+    bot.on_message = lambda text: telegram_reply(text, review, session)
     print("Rosie is listening on Telegram. Ctrl+C to stop.")
     try:
         bot.run_forever(stop)
@@ -139,6 +168,8 @@ def _parser() -> argparse.ArgumentParser:
     vault.add_argument("--config", help="path to rosie.yaml")
     brief = sub.add_parser("brief", help="print today's morning brief")
     brief.add_argument("--config", help="path to rosie.yaml")
+    review = sub.add_parser("review", help="nightly review in the terminal")
+    review.add_argument("--config", help="path to rosie.yaml")
     telegram = sub.add_parser("telegram", help="answer on Telegram from your phone")
     telegram.add_argument("--config", help="path to rosie.yaml")
     return parser
@@ -171,6 +202,10 @@ def main(argv: Sequence[str] | None = None) -> int:
         return code
     if args.command == "brief":
         print(build_brief(task_store(load_config(find_config(args.config)))), end="")
+        return 0
+    if args.command == "review":
+        config = load_config(find_config(args.config))
+        run_in_terminal(NightlyReview(task_store(config), vault_writer(config)), input, print)
         return 0
     if args.command == "telegram":
         return run_telegram(args.config)
