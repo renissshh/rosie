@@ -19,7 +19,9 @@ from pathlib import Path
 from rosie import __version__
 from rosie.builtin_tools import register_builtin_tools
 from rosie.config import RosieConfig, load_config, load_dotenv
+from rosie.memory import FactStore, register_memory_tools
 from rosie.tools import ToolRegistry
+from rosie.vault_writer import VaultWriter
 
 
 def find_config(arg: str | None, environ: Mapping[str, str] | None = None) -> Path | None:
@@ -36,7 +38,14 @@ def build_registry(config: RosieConfig) -> ToolRegistry:
     """All tools Rosie has today."""
     registry = ToolRegistry()
     register_builtin_tools(registry, config)
+    register_memory_tools(registry, fact_store(config))
     return registry
+
+
+def fact_store(config: RosieConfig) -> FactStore:
+    forbidden = [config.user_vault_dir] if config.user_vault_dir else []
+    writer = VaultWriter(config.vault_dir, forbidden=forbidden)
+    return FactStore(writer, config.data_dir / "index" / "memory.db")
 
 
 def _parser() -> argparse.ArgumentParser:

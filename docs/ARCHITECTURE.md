@@ -30,6 +30,7 @@ Step-by-step tour of one message: [WALKTHROUGH-v0.1.md](WALKTHROUGH-v0.1.md).
 | `rosie.doctor` | `rosie doctor`: checks Python, `D:\Rosie`, Ollama + model, fallback key (name only), vault, permissions. |
 | `rosie.vault` | rosie-vault layout (daily/ tasks/ memory/ study-log/ training-log/) and git sync: commit as "Rosie", pull --rebase, push; offline keeps the local commit. |
 | `rosie.vault_writer` | The only writer: notes in rosie-vault only (no `..`, absolute, drive, UNC, symlink escapes, `.git`, non-`.md`), atomic writes. |
+| `rosie.memory` | Facts: one markdown file per topic in `memory/`, Obsidian block ids (`^a1b2c3`), rebuildable SQLite FTS5 index; remember / update / forget / recall tools. |
 
 ## Invariants (each one has a test)
 
