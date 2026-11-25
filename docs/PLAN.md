@@ -31,7 +31,7 @@ Status legend: `[x]` done, `[ ]` to do.
 
 ## Sprint 2: Memory + vault (Dec 2 to Dec 8) -> v0.2 "she remembers"
 - [x] rosie-vault layout: daily/ tasks/ memory/ study-log/ training-log/ + git sync
-- [ ] Vault writer with path guard; tests prove no writes outside rosie-vault
+- [x] Vault writer with path guard; tests prove no writes outside rosie-vault
 - [ ] Facts store: remember / update / forget (markdown + SQLite index)
 - [ ] Tasks: add / list / complete, due dates, priorities
 - [ ] Read-only index of the user's vault; search across both vaults
