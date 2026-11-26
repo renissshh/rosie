@@ -8,6 +8,10 @@ Obsidian vault. Say "Hey Rosie" and she tells you what matters today.
 
 > Status: **v0.5 "opens at login"** ([walkthrough](docs/WALKTHROUGH-v0.5.md)). Sprint 6 (coaches + ship) next. See [docs/PLAN.md](docs/PLAN.md).
 
+![Rosie's orb going through its looks](docs/images/demo.gif)
+
+New here? Read the [user guide](docs/USER-GUIDE.md).
+
 ## What she will do (v1.0)
 
 - Wake on "Hey Rosie" or Ctrl+Space and brief you: top 3 tasks, schedule, what's overdue
