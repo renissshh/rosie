@@ -49,7 +49,11 @@ pub fn first_run(config_dir: &Path) -> bool {
         return false;
     }
     let _ = std::fs::create_dir_all(config_dir);
-    std::fs::write(&marker, "Rosie enabled start-at-login once; the tray tick decides now.\n").is_ok()
+    std::fs::write(
+        &marker,
+        "Rosie enabled start-at-login once; the tray tick decides now.\n",
+    )
+    .is_ok()
 }
 
 pub fn show_deck(app: &AppHandle) {
@@ -77,9 +81,28 @@ pub fn enable_autostart_on_first_run(app: &AppHandle) {
 
 pub fn build_tray(app: &AppHandle, restart_core: fn(&AppHandle)) -> tauri::Result<()> {
     let at_login = app.autolaunch().is_enabled().unwrap_or(false);
-    let deck = MenuItem::with_id(app, MENU_DECK, "Open Command Deck", true, Some("Ctrl+Space"))?;
-    let autostart = CheckMenuItem::with_id(app, MENU_AUTOSTART, "Start at login", true, at_login, None::<&str>)?;
-    let restart = MenuItem::with_id(app, MENU_RESTART, "Restart Rosie's core", true, None::<&str>)?;
+    let deck = MenuItem::with_id(
+        app,
+        MENU_DECK,
+        "Open Command Deck",
+        true,
+        Some("Ctrl+Space"),
+    )?;
+    let autostart = CheckMenuItem::with_id(
+        app,
+        MENU_AUTOSTART,
+        "Start at login",
+        true,
+        at_login,
+        None::<&str>,
+    )?;
+    let restart = MenuItem::with_id(
+        app,
+        MENU_RESTART,
+        "Restart Rosie's core",
+        true,
+        None::<&str>,
+    )?;
     let quit = MenuItem::with_id(app, MENU_QUIT, "Quit Rosie", true, None::<&str>)?;
     let separator = PredefinedMenuItem::separator(app)?;
     let menu = Menu::with_items(app, &[&deck, &autostart, &restart, &separator, &quit])?;
@@ -93,7 +116,11 @@ pub fn build_tray(app: &AppHandle, restart_core: fn(&AppHandle)) -> tauri::Resul
             Some(TrayAction::ToggleAutostart) => {
                 let launcher = app.autolaunch();
                 let on = launcher.is_enabled().unwrap_or(false);
-                let _ = if on { launcher.disable() } else { launcher.enable() };
+                let _ = if on {
+                    launcher.disable()
+                } else {
+                    launcher.enable()
+                };
                 let _ = toggle.set_checked(launcher.is_enabled().unwrap_or(!on));
             }
             Some(TrayAction::RestartCore) => restart_core(app),
@@ -114,7 +141,10 @@ mod tests {
     #[test]
     fn every_menu_id_has_an_action() {
         assert_eq!(tray_action(MENU_DECK), Some(TrayAction::OpenDeck));
-        assert_eq!(tray_action(MENU_AUTOSTART), Some(TrayAction::ToggleAutostart));
+        assert_eq!(
+            tray_action(MENU_AUTOSTART),
+            Some(TrayAction::ToggleAutostart)
+        );
         assert_eq!(tray_action(MENU_RESTART), Some(TrayAction::RestartCore));
         assert_eq!(tray_action(MENU_QUIT), Some(TrayAction::Quit));
         assert_eq!(tray_action("something-else"), None);

@@ -9,6 +9,7 @@ pub mod desktop;
 
 use std::process::Child;
 use std::sync::Mutex;
+use std::time::{Duration, Instant};
 
 use tauri::{AppHandle, Manager, PhysicalPosition, PhysicalSize, RunEvent};
 use tauri_plugin_autostart::MacosLauncher;
@@ -16,6 +17,12 @@ use tauri_plugin_global_shortcut::{GlobalShortcutExt, ShortcutState};
 
 /// The core process the orb started (None if it was already running).
 struct CoreProcess(Mutex<Option<Child>>);
+
+/// How often the watchdog looks at the core, and how many restarts it may make.
+const WATCH_EVERY: Duration = Duration::from_secs(15);
+const MAX_RESTARTS: usize = 5;
+const RESTART_WINDOW: Duration = Duration::from_secs(600);
+struct Watchdog(Mutex<core::RestartPolicy>);
 
 /// Gap between the orb window and the screen edges, in logical pixels.
 pub const MARGIN: f64 = 24.0;
@@ -63,6 +70,41 @@ fn start_core() -> Option<Child> {
     })
 }
 
+/// Did the core the orb started exit? (A core you started yourself is left alone.)
+fn core_died(app: &AppHandle) -> bool {
+    let state = app.state::<CoreProcess>();
+    let mut guard = state.0.lock().unwrap();
+    match guard.as_mut().map(|child| child.try_wait()) {
+        Some(Ok(Some(_))) | Some(Err(_)) => {
+            *guard = None;
+            true
+        }
+        _ => false,
+    }
+}
+
+/// Error recovery: every 15 s, restart a crashed core (at most 5 times in 10 minutes).
+fn watch_core(app: AppHandle) {
+    std::thread::spawn(move || loop {
+        std::thread::sleep(WATCH_EVERY);
+        if !core_died(&app) {
+            continue;
+        }
+        if app
+            .state::<Watchdog>()
+            .0
+            .lock()
+            .unwrap()
+            .allow(Instant::now())
+        {
+            eprintln!("Rosie's core stopped; starting it again");
+            *app.state::<CoreProcess>().0.lock().unwrap() = start_core();
+        } else {
+            eprintln!("Rosie's core keeps stopping; use the tray to restart it");
+        }
+    });
+}
+
 fn stop_core(app: &AppHandle) {
     // Only stop the core if the orb started it.
     if let Some(mut child) = app.state::<CoreProcess>().0.lock().unwrap().take() {
@@ -72,7 +114,9 @@ fn stop_core(app: &AppHandle) {
 }
 
 /// Tray -> "Restart Rosie's core": stop ours (if any), wait for the port to free, start again.
+/// A manual restart also forgets earlier crashes, so the watchdog may help again.
 fn restart_core(app: &AppHandle) {
+    app.state::<Watchdog>().0.lock().unwrap().reset();
     stop_core(app);
     for _ in 0..20 {
         if !core::core_is_up(core::CORE_ADDR, std::time::Duration::from_millis(100)) {
@@ -86,8 +130,13 @@ fn restart_core(app: &AppHandle) {
 pub fn run() {
     let app = tauri::Builder::default()
         // A second launch (e.g. from the Start menu) just opens the deck of the first one.
-        .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| desktop::show_deck(app)))
-        .plugin(tauri_plugin_autostart::init(MacosLauncher::LaunchAgent, None))
+        .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
+            desktop::show_deck(app)
+        }))
+        .plugin(tauri_plugin_autostart::init(
+            MacosLauncher::LaunchAgent,
+            None,
+        ))
         .plugin(
             tauri_plugin_global_shortcut::Builder::new()
                 .with_handler(|app, shortcut, event| {
@@ -100,6 +149,11 @@ pub fn run() {
         .setup(|app| {
             place_orb(app)?;
             app.manage(CoreProcess(Mutex::new(start_core())));
+            app.manage(Watchdog(Mutex::new(core::RestartPolicy::new(
+                MAX_RESTARTS,
+                RESTART_WINDOW,
+            ))));
+            watch_core(app.handle().clone());
             if let Err(err) = app.global_shortcut().register(desktop::hotkey()) {
                 eprintln!("Ctrl+Space is taken by another app: {err}"); // tray still works
             }
@@ -137,7 +191,10 @@ mod tests {
             PhysicalSize::new(200, 200),
             1.0,
         );
-        assert_eq!(spot, PhysicalPosition::new(1920 - 200 - 24, 1080 - 200 - 72));
+        assert_eq!(
+            spot,
+            PhysicalPosition::new(1920 - 200 - 24, 1080 - 200 - 72)
+        );
     }
 
     #[test]
@@ -148,7 +205,10 @@ mod tests {
             PhysicalSize::new(300, 300),
             1.5,
         );
-        assert_eq!(spot, PhysicalPosition::new(2880 - 300 - 36, 1620 - 300 - 108));
+        assert_eq!(
+            spot,
+            PhysicalPosition::new(2880 - 300 - 36, 1620 - 300 - 108)
+        );
     }
 
     #[test]

@@ -70,6 +70,6 @@ Status legend: `[x]` done, `[ ]` to do.
 - [x] Training coach: voice set logging, progression, stall alerts
 - [x] Always-on server option (Docker) sharing rosie-vault via git
 - [ ] Identity: emblem SVG, icons, wordmark
-- [ ] Hardening: error recovery, vault backups, rate limits
+- [x] Hardening: error recovery, vault backups, rate limits
 - [ ] Windows installer script, user guide, demo GIF
 - [ ] Final tests, merge, tag v1.0

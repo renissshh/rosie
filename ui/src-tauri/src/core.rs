@@ -66,9 +66,16 @@ mod tests {
 
     #[test]
     fn nothing_listening_means_down() {
-        let port = TcpListener::bind("127.0.0.1:0").unwrap().local_addr().unwrap().port();
+        let port = TcpListener::bind("127.0.0.1:0")
+            .unwrap()
+            .local_addr()
+            .unwrap()
+            .port();
         // the listener is dropped here, so the port is free again
-        assert!(!core_is_up(&format!("127.0.0.1:{port}"), Duration::from_millis(300)));
+        assert!(!core_is_up(
+            &format!("127.0.0.1:{port}"),
+            Duration::from_millis(300)
+        ));
         assert!(!core_is_up("not an address", Duration::from_millis(300)));
     }
 
@@ -81,7 +88,10 @@ mod tests {
     #[test]
     fn program_from_env_keeps_spaces_and_drops_quotes() {
         let path = r#""C:\Program Files\Rosie\rosie.exe""#;
-        assert_eq!(core_program(Some(path.into())), r"C:\Program Files\Rosie\rosie.exe");
+        assert_eq!(
+            core_program(Some(path.into())),
+            r"C:\Program Files\Rosie\rosie.exe"
+        );
     }
 
     #[test]
@@ -89,5 +99,74 @@ mod tests {
         let command = core_command("rosie");
         let args: Vec<_> = command.get_args().collect();
         assert_eq!(args, ["serve"]);
+    }
+}
+
+/// When to restart a core that died: at most `max` restarts in any `window`, so a core
+/// that crashes on start (bad config, missing Python) isn't restarted forever. The orb
+/// then stays grey, and the tray's "Restart Rosie's core" tries again by hand.
+pub struct RestartPolicy {
+    pub max: usize,
+    pub window: Duration,
+    restarts: Vec<std::time::Instant>,
+}
+
+impl RestartPolicy {
+    pub fn new(max: usize, window: Duration) -> Self {
+        Self {
+            max,
+            window,
+            restarts: Vec::new(),
+        }
+    }
+
+    /// May we restart now? Records the restart if so.
+    pub fn allow(&mut self, now: std::time::Instant) -> bool {
+        let window = self.window;
+        self.restarts.retain(|t| now.duration_since(*t) < window);
+        if self.restarts.len() >= self.max {
+            return false;
+        }
+        self.restarts.push(now);
+        true
+    }
+
+    /// Forget past crashes (after a manual restart from the tray).
+    pub fn reset(&mut self) {
+        self.restarts.clear();
+    }
+}
+
+#[cfg(test)]
+mod restart_tests {
+    use super::*;
+    use std::time::Instant;
+
+    #[test]
+    fn allows_a_few_restarts_then_gives_up() {
+        let mut policy = RestartPolicy::new(3, Duration::from_secs(600));
+        let start = Instant::now();
+        assert!(policy.allow(start));
+        assert!(policy.allow(start + Duration::from_secs(10)));
+        assert!(policy.allow(start + Duration::from_secs(20)));
+        assert!(!policy.allow(start + Duration::from_secs(30)));
+    }
+
+    #[test]
+    fn old_crashes_are_forgotten() {
+        let mut policy = RestartPolicy::new(1, Duration::from_secs(600));
+        let start = Instant::now();
+        assert!(policy.allow(start));
+        assert!(!policy.allow(start + Duration::from_secs(599)));
+        assert!(policy.allow(start + Duration::from_secs(601)));
+    }
+
+    #[test]
+    fn reset_allows_again() {
+        let mut policy = RestartPolicy::new(1, Duration::from_secs(600));
+        let start = Instant::now();
+        policy.allow(start);
+        policy.reset();
+        assert!(policy.allow(start));
     }
 }

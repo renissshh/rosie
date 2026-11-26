@@ -28,3 +28,16 @@ flood the agent:
 
 The local model (Ollama) has no limit: it's free and on your machine. The agent's own
 loop is already capped at `max_agent_steps` tool rounds per message.
+
+## Error recovery
+
+| What fails | What Rosie does |
+| --- | --- |
+| The core (`rosie serve`) crashes | The orb's watchdog notices within 15 s and starts it again, at most 5 times in 10 minutes. After that it stops trying (something is really broken, e.g. a bad `rosie.yaml`): the orb stays grey and **Restart Rosie's core** in the tray tries again |
+| The orb opens before the core is ready | The orb reconnects by itself (1 s, 2 s, 4 s ... 10 s) |
+| A second core is started | It says the port is taken and that the orb uses the running one, instead of a traceback |
+| Ollama is down | Chat, Telegram and the orb answer "I can't reach my brain" with the fix; the cloud fallback is used if configured; the orb shows a dashed amber ring |
+| A scheduled job throws | It's logged; the other jobs keep running and the job runs again next time |
+| A Telegram poll fails | It's retried after 5 seconds |
+| A vault sync fails (offline) | The local commit is kept and pushed on the next round |
+| A tool fails | The agent gets the error as text and explains or tries something else |

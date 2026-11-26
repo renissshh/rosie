@@ -392,6 +392,10 @@ def run_serve(
         bridge.run_forever(stop)
     except KeyboardInterrupt:
         pass
+    except OSError as exc:  # usually: the port is taken by a core that's already running
+        print(f"Can't listen on 127.0.0.1:{port} ({exc.strerror or exc}).")
+        print("Is Rosie's core already running? The orb connects to that one.")
+        return 1
     finally:
         scheduler_stop.set()
     return 0

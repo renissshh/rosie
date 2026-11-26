@@ -308,3 +308,18 @@ def test_after_runs_once_the_answer_is_ready(bridge):
         ws.send(json.dumps({"type": "ask", "text": "add a task"}))
         recv(ws, "reply")
     assert calls == ["refresh"]
+
+
+def test_rosie_serve_on_a_taken_port_explains(tmp_path, capsys):
+    import socket
+
+    from rosie.__main__ import run_serve
+
+    config = tmp_path / "rosie.yaml"
+    config.write_text(f"data_dir: {tmp_path.as_posix()}/data\n", encoding="utf-8")
+    with socket.socket() as taken:
+        taken.bind(("127.0.0.1", 0))
+        taken.listen()
+        port = taken.getsockname()[1]
+        assert run_serve(str(config), port) == 1
+    assert "already running" in capsys.readouterr().out
