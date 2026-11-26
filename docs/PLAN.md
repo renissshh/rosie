@@ -61,7 +61,7 @@ Status legend: `[x]` done, `[ ]` to do.
 - [x] WebSocket bridge to the Python core (sidecar)
 - [x] Orb states: idle, listening, thinking, speaking, nudge, focus
 - [x] Day Ring: today's blocks drawn live from the schedule
-- [ ] Command Deck: brief cards, text box, transcript, quick log
+- [x] Command Deck: brief cards, text box, transcript, quick log
 - [ ] Autostart at login, health check, tray, Ctrl+Space
 - [ ] Merge, tag v0.5
 

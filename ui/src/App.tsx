@@ -1,7 +1,7 @@
 /**
  * Rosie's window. The page is transparent; only the orb and its Day Ring are drawn.
  * Drag the edge around the orb to move it; click the orb to talk (or to dismiss a
- * reminder that is pulsing).
+ * reminder that is pulsing); right-click it for the Command Deck.
  */
 import { useEffect, useState } from "react";
 import { BridgeClient } from "./bridge";
@@ -10,12 +10,21 @@ import { look } from "./orb";
 import { Orb } from "./Orb";
 import { CoreEvent, DayData } from "./protocol";
 import { useCore } from "./useCore";
+import { openDeck as openDeckWindow } from "./windows";
 
-export default function App({ makeClient, clock = () => new Date() }: { makeClient?: () => BridgeClient; clock?: () => Date }) {
+interface AppProps {
+  makeClient?: () => BridgeClient;
+  clock?: () => Date;
+  openDeck?: () => void;
+}
+
+export default function App({ makeClient, clock = () => new Date(), openDeck = () => void openDeckWindow() }: AppProps) {
   const [day, setDay] = useState<DayData | null>(null);
   const [now, setNow] = useState(clock);
   const { model, dispatch, send } = useCore(makeClient, (event: CoreEvent) => {
     if (event.type === "day") setDay(event);
+    // No microphone on the core: typing in the deck is the way to talk.
+    if (event.type === "error" && event.text.startsWith("voice is off")) openDeck();
   });
   const current = look(model);
 
@@ -32,7 +41,7 @@ export default function App({ makeClient, clock = () => new Date() }: { makeClie
   return (
     <main className="stage" data-tauri-drag-region>
       <DayRing day={day} now={now} nudging={current === "nudge"} />
-      <Orb look={current} onClick={onOrbClick} />
+      <Orb look={current} onClick={onOrbClick} onMenu={openDeck} />
     </main>
   );
 }

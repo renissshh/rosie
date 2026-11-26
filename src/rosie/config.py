@@ -13,6 +13,7 @@ from __future__ import annotations
 import os
 import sys
 from collections.abc import Mapping
+from datetime import date
 from pathlib import Path
 from typing import Literal
 
@@ -73,6 +74,13 @@ class DayBlock(BaseModel):
         return days
 
 
+class Countdown(BaseModel):
+    """A date to count down to on the Command Deck (exams, a deadline)."""
+
+    label: str
+    date: date
+
+
 class RosieConfig(BaseModel):
     data_dir: Path = Field(default_factory=default_data_dir)
     vault_dir: Path | None = None  # Rosie's own vault; defaults to <data_dir>/rosie-vault
@@ -85,6 +93,7 @@ class RosieConfig(BaseModel):
     review_time: str = "22:00"  # nightly review
     voice: str = "kokoro-emma"  # see `rosie voices`
     day_blocks: list[DayBlock] = Field(default_factory=list)  # the orb's Day Ring
+    countdowns: list[Countdown] = Field(default_factory=list)  # shown on the Command Deck
 
     @model_validator(mode="after")
     def _derive_paths(self) -> RosieConfig:

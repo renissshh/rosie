@@ -44,3 +44,7 @@ day_blocks:
   - { start: "19:00", end: "21:00", kind: study, label: "Study" }
   - { start: "22:00", end: "22:15", kind: review, label: "Nightly review" }
   - { start: "23:30", end: "06:30", kind: sleep, label: "Sleep" }
+
+# Dates to count down to on the Command Deck; the nearest one still ahead is shown.
+countdowns:
+  - { label: "Semester exams", date: "2027-05-10" }

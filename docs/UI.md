@@ -81,6 +81,28 @@ noon at the bottom, 18:00 on the left. A small white hand shows the time.
 The core recomputes the ring every 30 seconds (`src/rosie/day.py`) and only sends it
 when something changed: a new reminder, or a new day after midnight.
 
+## The Command Deck
+
+Right-click the orb (or press Ctrl+Space) to open the Command Deck, a small window
+next to it. Closing it only hides it.
+
+- **Rosie asks**: when the safety gate needs your yes (deleting a note, say), the
+  question appears at the top with Allow / Deny. No answer in 60 seconds means no.
+- **Top 3 today**: your most urgent open tasks; tick one to mark it done.
+- **Now / Next**: the block you're in and the next block or reminder; your **study
+  streak** (days in a row with a study entry); the nearest **countdown** from
+  `countdowns` in `rosie.yaml`; and how many tasks are overdue.
+- **Conversation**: the live transcript, typed or spoken.
+- **Text box**: Enter asks Rosie. Or type and tap a quick-log button:
+
+| Button | Writes to rosie-vault | Example |
+| --- | --- | --- |
+| + Study | `study-log/YYYY-MM-DD.md`, `- 19:40 DBMS normal forms (45 min)` | `DBMS normal forms 45m` (`1h 30m`, `90 mins` work too) |
+| + Gym | `training-log/YYYY-MM-DD.md`, `- 18:10 bench 3x8 40kg` | `push day, bench 3x8 40kg` |
+| + Task | a new task in `tasks/tasks.md` | `buy notebook` |
+
+Without `--voice`, clicking the orb opens the deck too, since typing is the way to talk.
+
 ## How the orb talks to Rosie's core
 
 The orb is only a face; everything Rosie knows lives in the Python core. They talk over
@@ -109,6 +131,9 @@ quits. The orb keeps reconnecting (1 s, 2 s, 4 s ... 10 s), so starting order ne
 | `nudge {title, text, urgent}` | core -> orb | A reminder fired (`urgent` ones get through focus) |
 | `confirm {id, question}` | core -> orb | The safety gate wants your yes/no |
 | `confirm_reply {id, allow}` | orb -> core | Your answer (only `true` means yes; 60 s silence = no) |
+| `brief {top3, overdue, streak, countdown}` | core -> orb | The deck's cards (sent when they change) |
+| `log {what, text}` | orb -> core | Quick log: `what` is `study`, `gym` or `task`; answered with `logged {text}` |
+| `done {id}` | orb -> core | Tick a task; answered with `logged {text}` |
 | `error {text}` | core -> orb | A request could not be handled |
 
 A request may carry an `id`; the answer repeats it. Safety: the core listens on

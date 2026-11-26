@@ -1,34 +1,11 @@
-import { act, fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import App from "./App";
-import { BridgeClient, SocketLike } from "./bridge";
+import { fakeCore } from "./testing";
 
-class FakeSocket implements SocketLike {
-  readyState = 0;
-  sent: unknown[] = [];
-  onopen: ((ev: unknown) => void) | null = null;
-  onclose: ((ev: unknown) => void) | null = null;
-  onmessage: ((ev: { data: unknown }) => void) | null = null;
-  onerror: ((ev: unknown) => void) | null = null;
-  send(data: string) {
-    this.sent.push(JSON.parse(data));
-  }
-  close() {
-    this.readyState = 3;
-  }
-}
-
-function mount() {
-  const socket = new FakeSocket();
-  const client = () => new BridgeClient({ makeSocket: () => socket, setTimer: () => 0, clearTimer: () => {} });
-  render(<App makeClient={client} />);
-  const core = {
-    open: () => act(() => {
-      socket.readyState = 1;
-      socket.onopen?.({});
-    }),
-    say: (event: object) => act(() => socket.onmessage?.({ data: JSON.stringify(event) })),
-  };
-  return { socket, core };
+function mount(openDeck = () => {}) {
+  const core = fakeCore();
+  render(<App makeClient={core.makeClient} openDeck={openDeck} />);
+  return { socket: core.socket, core };
 }
 
 test("the stage can be dragged", () => {
@@ -67,4 +44,21 @@ test("the Day Ring draws what the core sends", () => {
   core.open();
   core.say({ type: "day", date: "2026-11-26", blocks: [{ start: "19:00", end: "21:00", kind: "study", label: "DBMS" }], marks: [] });
   expect(screen.getByRole("img", { name: "Today's plan" }).querySelectorAll("path.block")).toHaveLength(1);
+});
+
+test("right-click on the orb opens the Command Deck", () => {
+  const opened: string[] = [];
+  const { core } = mount(() => opened.push("deck"));
+  core.open();
+  fireEvent.contextMenu(screen.getByRole("button"));
+  expect(opened).toEqual(["deck"]);
+});
+
+test("without voice, a click opens the deck so you can type", () => {
+  const opened: string[] = [];
+  const { core } = mount(() => opened.push("deck"));
+  core.open();
+  fireEvent.click(screen.getByRole("button"));
+  core.say({ type: "error", text: "voice is off: start the core with `rosie serve --voice`" });
+  expect(opened).toEqual(["deck"]);
 });

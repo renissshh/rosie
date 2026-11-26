@@ -235,6 +235,9 @@ def test_rosie_serve_answers_on_the_websocket(tmp_path):
             assert recv(ws) == {"type": "state", "state": "idle"}
             day = recv(ws, "day")  # the Day Ring, sent as soon as the core starts
             assert day["blocks"][0]["kind"] == "gym"
+            assert recv(ws, "brief")["top3"] == []  # the Command Deck's cards
+            ws.send(json.dumps({"type": "log", "what": "task", "text": "buy notebook"}))
+            assert recv(ws, "logged")["text"] == "Added task: buy notebook"
             ws.send(json.dumps({"type": "ask", "text": "hi"}))
             assert "Ollama" in recv(ws, "reply", timeout=20)["text"]  # no LLM here: friendly
             ws.send(json.dumps({"type": "listen"}))
@@ -292,3 +295,13 @@ def test_orb_voice_that_cannot_start_returns_none(bridge, tmp_path, capsys):
 
     assert start_orb_voice(RosieConfig(data_dir=tmp_path), bridge, str, build=build) is None
     assert "Voice off" in capsys.readouterr().out
+
+
+def test_after_runs_once_the_answer_is_ready(bridge):
+    calls = []
+    ChatHandlers(bridge, lambda text: "ok", after=lambda: calls.append("refresh"))
+    with connect(url(bridge)) as ws:
+        recv(ws, "hello")
+        ws.send(json.dumps({"type": "ask", "text": "add a task"}))
+        recv(ws, "reply")
+    assert calls == ["refresh"]

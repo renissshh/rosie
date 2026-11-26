@@ -115,8 +115,11 @@ class DayWatcher:
         return sent
 
 
-def watch_forever(watcher: DayWatcher, now: Callable[[], datetime], stop, every_s: float = 30.0):
-    """Tick until `stop` (a threading.Event) is set. Used by `rosie serve` in a thread."""
+def watch_forever(ticks: list[Callable[[datetime], object]], now, stop, every_s: float = 30.0):
+    """Call every tick with the current time until `stop` (a threading.Event) is set.
+    `rosie serve` runs this in a thread for the Day Ring and the Command Deck."""
     while not stop.is_set():
-        watcher.tick(now())
+        moment = now()
+        for tick in ticks:
+            tick(moment)
         stop.wait(every_s)

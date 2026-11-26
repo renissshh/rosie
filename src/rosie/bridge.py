@@ -228,9 +228,15 @@ class ChatHandlers:
     the conversation are sent as transcript lines, so the Command Deck can show them.
     """
 
-    def __init__(self, bridge: Bridge, ask: Callable[[str], str]) -> None:
+    def __init__(
+        self,
+        bridge: Bridge,
+        ask: Callable[[str], str],
+        after: Callable[[], None] | None = None,
+    ) -> None:
         self.bridge = bridge
         self.ask = ask
+        self.after = after  # e.g. refresh the deck's cards: she may have added a task
         bridge.on("ask", self.on_ask)
 
     def on_ask(self, message: Event) -> Event:
@@ -244,6 +250,8 @@ class ChatHandlers:
         finally:
             self.bridge.emit({"type": "state", "state": "idle"}, keep=True)
         self.bridge.emit({"type": "transcript", "role": "rosie", "text": reply})
+        if self.after:
+            self.after()
         return {"type": "reply", "text": reply}
 
 

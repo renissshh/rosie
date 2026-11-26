@@ -215,3 +215,166 @@ body,
     animation: none !important;
   }
 }
+
+/* ---- the Command Deck window (src/Deck.tsx) ---- */
+body[data-window="deck"] {
+  background: #0b1016;
+  color: #e2e8f0;
+  overflow: auto;
+  user-select: text;
+}
+
+.deck {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px;
+  font-size: 14px;
+}
+
+.deck header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.deck h1 {
+  margin: 0;
+  font-size: 18px;
+  letter-spacing: 0.08em;
+}
+
+.deck h2 {
+  margin: 0 0 4px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #94a3b8;
+}
+
+.deck p {
+  margin: 0 0 8px;
+}
+
+.status {
+  font-size: 12px;
+  color: #f87171;
+}
+
+.status.on {
+  color: var(--ring);
+}
+
+.card {
+  background: #131b24;
+  border: 1px solid #1f2a36;
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+
+.card.confirm {
+  border-color: var(--amber);
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.big {
+  font-size: 22px;
+  font-weight: 600;
+}
+
+.muted {
+  color: #64748b;
+}
+
+.overdue {
+  color: var(--amber);
+}
+
+.tasks {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.tasks li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 0;
+}
+
+.tasks small {
+  margin-left: auto;
+  color: #94a3b8;
+}
+
+.transcript {
+  max-height: 180px;
+  overflow-y: auto;
+}
+
+.transcript .you {
+  color: #94a3b8;
+}
+
+.transcript .rosie {
+  color: #e2e8f0;
+}
+
+.transcript .you::before {
+  content: "You: ";
+}
+
+.transcript .rosie::before {
+  content: "Rosie: ";
+  color: var(--ring);
+}
+
+.row,
+.ask {
+  display: flex;
+  gap: 8px;
+}
+
+.ask input {
+  flex: 1;
+  min-width: 0;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid #1f2a36;
+  background: #0f151c;
+  color: inherit;
+  font: inherit;
+}
+
+.deck button {
+  padding: 7px 12px;
+  border-radius: 8px;
+  border: none;
+  background: var(--ring);
+  color: #042f2e;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.deck button.quiet {
+  background: #1f2a36;
+  color: #e2e8f0;
+}
+
+.deck button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.notice {
+  font-size: 12px;
+  color: #94a3b8;
+}

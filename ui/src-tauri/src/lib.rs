@@ -64,6 +64,15 @@ pub fn run() {
             app.manage(CoreProcess(Mutex::new(child)));
             Ok(())
         })
+        .on_window_event(|window, event| {
+            // Closing the Command Deck only hides it; the orb opens it again.
+            if let tauri::WindowEvent::CloseRequested { api, .. } = event {
+                if window.label() == "deck" {
+                    api.prevent_close();
+                    let _ = window.hide();
+                }
+            }
+        })
         .build(tauri::generate_context!())
         .expect("Rosie's window failed to start");
     app.run(|handle, event| {
