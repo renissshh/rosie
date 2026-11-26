@@ -57,13 +57,13 @@ Status legend: `[x]` done, `[ ]` to do.
 - [x] Merge, tag v0.4, walkthrough doc (`docs/WALKTHROUGH-v0.4.md`)
 
 ## Sprint 5: Orb UI + autostart (Dec 23 to Dec 29) -> v0.5 "opens at login"
-- [ ] Tauri 2 + React shell, transparent always-on-top window
-- [ ] WebSocket bridge to the Python core (sidecar)
-- [ ] Orb states: idle, listening, thinking, speaking, nudge, focus
-- [ ] Day Ring: today's blocks drawn live from the schedule
-- [ ] Command Deck: brief cards, text box, transcript, quick log
-- [ ] Autostart at login, health check, tray, Ctrl+Space
-- [ ] Merge, tag v0.5
+- [x] Tauri 2 + React shell, transparent always-on-top window
+- [x] WebSocket bridge to the Python core (sidecar)
+- [x] Orb states: idle, listening, thinking, speaking, nudge, focus
+- [x] Day Ring: today's blocks drawn live from the schedule
+- [x] Command Deck: brief cards, text box, transcript, quick log
+- [x] Autostart at login, health check, tray, Ctrl+Space
+- [x] Merge, tag v0.5, walkthrough doc (`docs/WALKTHROUGH-v0.5.md`)
 
 ## Sprint 6: Coaches + ship (Dec 30 to Jan 5) -> v1.0
 - [ ] Study coach: sessions, weak-subject detection, quizzes from notes

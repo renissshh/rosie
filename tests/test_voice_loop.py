@@ -151,3 +151,30 @@ def test_cli_voice_without_voice_extras_explains(tmp_path, monkeypatch, capsys):
     monkeypatch.setenv("ROSIE_DATA_DIR", str(tmp_path / "Rosie"))
     assert main(["voice"]) == 1
     assert "[voice]" in capsys.readouterr().out
+
+
+def test_wake_now_listens_without_the_wake_word():
+    loop, states = make(wake=WakeOnFrame(at=10_000))
+    loop.wake_now()
+    feed(loop, quiet(30) + tone(900) + quiet(900))
+    assert states[:2] == ["listening", "thinking"]
+    assert loop.heard == ["what's on today"]
+
+
+def test_wake_now_while_speaking_stops_her_and_listens():
+    player = FakePlayer(frames_long=1000)
+    loop, states = make(player=player)
+    feed(loop, quiet(30) + tone(900) + quiet(900))
+    assert loop.state == "speaking"
+    loop.wake_now()
+    feed(loop, quiet(30))
+    assert loop.state == "listening"
+    assert player.stopped == 1
+
+
+def test_transcript_lines_are_reported():
+    lines = []
+    loop, _ = make()
+    loop.on_transcript = lambda role, text: lines.append((role, text))
+    feed(loop, quiet(30) + tone(900) + quiet(900))
+    assert lines == [("you", "what's on today"), ("rosie", "reply to what's on today")]

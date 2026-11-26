@@ -6,7 +6,7 @@ Rosie is a personal AI chief of staff that lives on a Windows laptop as a floati
 answers on Telegram from the phone, and keeps her own second brain in a separate
 Obsidian vault. Say "Hey Rosie" and she tells you what matters today.
 
-> Status: **v0.4 "hands-free"** ([walkthrough](docs/WALKTHROUGH-v0.4.md)). Sprint 5 (orb UI) next. See [docs/PLAN.md](docs/PLAN.md).
+> Status: **v0.5 "opens at login"** ([walkthrough](docs/WALKTHROUGH-v0.5.md)). Sprint 6 (coaches + ship) next. See [docs/PLAN.md](docs/PLAN.md).
 
 ## What she will do (v1.0)
 
@@ -43,6 +43,10 @@ it up), set reminders, and send a morning brief and nightly review (`rosie brief
 Hands-free: `pip install -e ".[voice]"`, then `rosie voice` and say "Hey Rosie, what's on
 today?" ([docs/VOICE.md](docs/VOICE.md)).
 
+On the desktop: the orb (`ui/`, Tauri + React) floats bottom-right with the Day Ring
+around it; right-click or Ctrl+Space opens the Command Deck. It starts `rosie serve` for
+you and, once installed, opens at login ([docs/UI.md](docs/UI.md)).
+
 When Rosie wants to do something that needs your yes (see `config/permissions.yaml`),
 she asks `Allow? [y/N]` in the terminal; anything but `y` means no.
 
@@ -53,6 +57,8 @@ python -m pip install -e ".[dev]"
 ruff check . && ruff format --check .
 python -m pytest
 ```
+
+The orb UI lives in `ui/` (Tauri 2 + React): see [docs/UI.md](docs/UI.md).
 
 Configuration: copy `config/rosie.example.yaml` to `config/rosie.yaml` and `.env.example`
 to `.env`. Secrets live only in `.env`.

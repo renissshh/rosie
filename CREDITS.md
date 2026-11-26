@@ -17,4 +17,6 @@ contributed ideas, not code.
 | [python-sounddevice](https://github.com/spatialaudio/python-sounddevice) | MIT | Dependency (optional, `[voice]`): microphone capture |
 | [Kokoro-82M](https://huggingface.co/hexgrad/Kokoro-82M) via sherpa-onnx | Apache-2.0 | Voice model (downloaded at runtime, not in the repo) |
 | Piper voices via sherpa-onnx | see the model's folder | Optional small voice (downloaded at runtime, not in the repo) |
+| [Tauri](https://github.com/tauri-apps/tauri) | MIT / Apache-2.0 | Dependency: the orb's native window, plus its autostart, global-shortcut and single-instance plugins (`ui/src-tauri`) |
+| [React](https://github.com/facebook/react), [Vite](https://github.com/vitejs/vite), [Vitest](https://github.com/vitest-dev/vitest) | MIT | Dependency: the orb's page and its tests (`ui/`) |
 | [PyAV](https://github.com/PyAV-Org/PyAV) | BSD-3-Clause | Dependency (with faster-whisper): decode/encode Telegram voice notes |

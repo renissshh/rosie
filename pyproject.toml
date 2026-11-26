@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "rosie"
-version = "0.4.0"
+version = "0.5.0"
 description = "Rosie (R.O.S.I.E.): a personal AI chief of staff for Windows, Telegram and Obsidian."
 readme = "README.md"
 license = "MIT"
@@ -14,6 +14,7 @@ dependencies = [
     "pyyaml>=6.0",
     "pydantic>=2.7",
     "httpx>=0.27",
+    "websockets>=13.0",  # the orb UI bridge
     "tzdata>=2024.1",  # Windows has no system time-zone database for zoneinfo
 ]
 

@@ -34,3 +34,17 @@ review_time: "22:00"
 
 # Rosie's voice (needs pip install -e ".[voice]"). List: `rosie voices`; try: `rosie say "hi" --voice kokoro-george`
 voice: "kokoro-emma"
+
+# Your usual day, drawn as the orb's Day Ring (a 24-hour clock, midnight at the top).
+# kind: study, college, gym, review, sleep or other. During a "study" block the orb
+# dims and only urgent reminders get through. `days` defaults to every day.
+day_blocks:
+  - { start: "09:00", end: "15:30", kind: college, label: "College", days: [mon, tue, wed, thu, fri] }
+  - { start: "17:00", end: "18:00", kind: gym, label: "Gym" }
+  - { start: "19:00", end: "21:00", kind: study, label: "Study" }
+  - { start: "22:00", end: "22:15", kind: review, label: "Nightly review" }
+  - { start: "23:30", end: "06:30", kind: sleep, label: "Sleep" }
+
+# Dates to count down to on the Command Deck; the nearest one still ahead is shown.
+countdowns:
+  - { label: "Semester exams", date: "2027-05-10" }
