@@ -288,6 +288,8 @@ def run_serve(
     from rosie.bridge import Bridge, BridgeError, ChatHandlers, orb_notifier
     from rosie.chat import build_session
     from rosie.day import DayWatcher, watch_forever
+    from rosie.doctor import run_checks
+    from rosie.health import HealthFeed
     from rosie.quicklog import DeckFeed, QuickLog
 
     load_dotenv(Path(".env"))
@@ -316,9 +318,10 @@ def run_serve(
     deck = DeckFeed(bridge, QuickLog(vault_writer(config), tasks, now), config.countdowns)
     ChatHandlers(bridge, ask, after=deck.refresh)
     watcher = DayWatcher(config.day_blocks, reminders.scheduler.jobs, bridge.emit)
+    health = HealthFeed(bridge, lambda: run_checks(config))
     threading.Thread(
         target=watch_forever,
-        args=([watcher.tick, deck.refresh], now, scheduler_stop),
+        args=([health.tick, watcher.tick, deck.refresh], now, scheduler_stop),
         daemon=True,
     ).start()
     if not (voice and start_orb_voice(config, bridge, ask)):

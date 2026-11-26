@@ -7,7 +7,7 @@ import { FormEvent, useEffect, useState } from "react";
 import { BridgeClient } from "./bridge";
 import { minutesOf } from "./ringGeometry";
 import { addLine, daysLeft, Line, nowNext } from "./deckModel";
-import { BriefData, CoreEvent, DayData } from "./protocol";
+import { BriefData, CoreEvent, DayData, HealthData } from "./protocol";
 import { useCore } from "./useCore";
 
 type LogKind = "study" | "gym" | "task";
@@ -20,6 +20,7 @@ const LOG_BUTTONS: { what: LogKind; label: string; hint: string }[] = [
 export default function Deck({ makeClient, clock = () => new Date() }: { makeClient?: () => BridgeClient; clock?: () => Date }) {
   const [lines, setLines] = useState<Line[]>([]);
   const [brief, setBrief] = useState<BriefData | null>(null);
+  const [health, setHealth] = useState<HealthData | null>(null);
   const [day, setDay] = useState<DayData | null>(null);
   const [confirms, setConfirms] = useState<{ id: string; question: string }[]>([]);
   const [notice, setNotice] = useState("");
@@ -29,6 +30,7 @@ export default function Deck({ makeClient, clock = () => new Date() }: { makeCli
   const { model, send } = useCore(makeClient, (event: CoreEvent) => {
     if (event.type === "transcript") setLines((old) => addLine(old, { role: event.role, text: event.text }));
     else if (event.type === "brief") setBrief(event);
+    else if (event.type === "health") setHealth(event);
     else if (event.type === "day") setDay(event);
     else if (event.type === "confirm") setConfirms((old) => [...old, { id: event.id, question: event.question }]);
     else if (event.type === "logged" || event.type === "error") setNotice(event.text);
@@ -78,6 +80,22 @@ export default function Deck({ makeClient, clock = () => new Date() }: { makeCli
           </div>
         </section>
       ))}
+
+      {health && !health.ok && (
+        <section className="card problem" aria-label="Needs a hand">
+          <h2>Needs a hand</h2>
+          {health.checks
+            .filter((c) => c.status === "fail")
+            .map((c) => (
+              <p key={c.name}>
+                <strong>{c.name}</strong>: {c.detail}
+              </p>
+            ))}
+          <button className="quiet" onClick={() => send({ type: "health" })}>
+            Check again
+          </button>
+        </section>
+      )}
 
       <section className="card" aria-label="Top 3 today">
         <h2>Top 3 today</h2>

@@ -233,6 +233,9 @@ def test_rosie_serve_answers_on_the_websocket(tmp_path):
         with ws:
             assert recv(ws)["type"] == "hello"
             assert recv(ws) == {"type": "state", "state": "idle"}
+            health = recv(ws, "health")  # checked before anything else
+            assert health["ok"] is False  # no Ollama in the test
+            assert any(c["name"] == "LLM" and c["status"] == "fail" for c in health["checks"])
             day = recv(ws, "day")  # the Day Ring, sent as soon as the core starts
             assert day["blocks"][0]["kind"] == "gym"
             assert recv(ws, "brief")["top3"] == []  # the Command Deck's cards

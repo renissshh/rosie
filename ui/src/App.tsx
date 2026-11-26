@@ -3,22 +3,28 @@
  * Drag the edge around the orb to move it; click the orb to talk (or to dismiss a
  * reminder that is pulsing); right-click it for the Command Deck.
  */
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { BridgeClient } from "./bridge";
 import { DayRing } from "./DayRing";
 import { look } from "./orbState";
 import { Orb } from "./Orb";
 import { CoreEvent, DayData } from "./protocol";
 import { useCore } from "./useCore";
-import { openDeck as openDeckWindow } from "./windows";
+import { onHotkey as onTauriHotkey, openDeck as openDeckWindow } from "./windows";
 
 interface AppProps {
   makeClient?: () => BridgeClient;
   clock?: () => Date;
   openDeck?: () => void;
+  onHotkey?: (handler: () => void) => () => void;
 }
 
-export default function App({ makeClient, clock = () => new Date(), openDeck = () => void openDeckWindow() }: AppProps) {
+export default function App({
+  makeClient,
+  clock = () => new Date(),
+  openDeck = () => void openDeckWindow(),
+  onHotkey = onTauriHotkey,
+}: AppProps) {
   const [day, setDay] = useState<DayData | null>(null);
   const [now, setNow] = useState(clock);
   const { model, dispatch, send } = useCore(makeClient, (event: CoreEvent) => {
@@ -35,8 +41,14 @@ export default function App({ makeClient, clock = () => new Date(), openDeck = (
 
   const onOrbClick = () => {
     if (current === "nudge") dispatch({ kind: "dismiss" });
+    else if (current === "unwell" || current === "offline") openDeck(); // shows what's wrong
     else send({ type: "listen" });
   };
+
+  // Ctrl+Space anywhere in Windows (registered by the Tauri shell) = a click on the orb.
+  const clickRef = useRef(onOrbClick);
+  clickRef.current = onOrbClick;
+  useEffect(() => onHotkey(() => clickRef.current()), [onHotkey]);
 
   return (
     <main className="stage" data-tauri-drag-region>

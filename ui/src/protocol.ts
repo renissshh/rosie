@@ -39,6 +39,17 @@ export interface BriefData {
   countdown: { label: string; date: string; days: number } | null;
 }
 
+export interface HealthCheck {
+  name: string;
+  status: "ok" | "warn" | "fail";
+  detail: string;
+}
+export interface HealthData {
+  type: "health";
+  ok: boolean;
+  checks: HealthCheck[];
+}
+
 /** What the core sends. */
 export type CoreEvent =
   | { type: "hello"; version: string }
@@ -48,6 +59,7 @@ export type CoreEvent =
   | { type: "focus"; on: boolean; label?: string }
   | DayData
   | BriefData
+  | HealthData
   | { type: "logged"; text: string; id?: string | number }
   | { type: "transcript"; role: "you" | "rosie"; text: string }
   | { type: "reply"; text: string; id?: string | number }
@@ -59,6 +71,7 @@ export type OrbRequest =
   | { type: "ping"; id?: string | number }
   | { type: "ask"; text: string; id?: string | number }
   | { type: "listen" }
+  | { type: "health" }
   | { type: "log"; what: "study" | "gym" | "task"; text: string }
   | { type: "done"; id: string }
   | { type: "confirm_reply"; id: string; allow: boolean };

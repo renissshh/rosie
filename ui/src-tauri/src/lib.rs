@@ -5,11 +5,14 @@
 //! Rosie's Python core next to it (see `core.rs`).
 
 pub mod core;
+pub mod desktop;
 
 use std::process::Child;
 use std::sync::Mutex;
 
-use tauri::{Manager, PhysicalPosition, PhysicalSize, RunEvent};
+use tauri::{AppHandle, Manager, PhysicalPosition, PhysicalSize, RunEvent};
+use tauri_plugin_autostart::MacosLauncher;
+use tauri_plugin_global_shortcut::{GlobalShortcutExt, ShortcutState};
 
 /// The core process the orb started (None if it was already running).
 struct CoreProcess(Mutex<Option<Child>>);
@@ -52,16 +55,56 @@ fn place_orb(app: &tauri::App) -> tauri::Result<()> {
     Ok(())
 }
 
+fn start_core() -> Option<Child> {
+    core::ensure_core().unwrap_or_else(|err| {
+        // The orb still opens and keeps retrying; it shows "core offline".
+        eprintln!("could not start Rosie's core: {err}");
+        None
+    })
+}
+
+fn stop_core(app: &AppHandle) {
+    // Only stop the core if the orb started it.
+    if let Some(mut child) = app.state::<CoreProcess>().0.lock().unwrap().take() {
+        let _ = child.kill();
+        let _ = child.wait();
+    }
+}
+
+/// Tray -> "Restart Rosie's core": stop ours (if any), wait for the port to free, start again.
+fn restart_core(app: &AppHandle) {
+    stop_core(app);
+    for _ in 0..20 {
+        if !core::core_is_up(core::CORE_ADDR, std::time::Duration::from_millis(100)) {
+            break;
+        }
+        std::thread::sleep(std::time::Duration::from_millis(150));
+    }
+    *app.state::<CoreProcess>().0.lock().unwrap() = start_core();
+}
+
 pub fn run() {
     let app = tauri::Builder::default()
+        // A second launch (e.g. from the Start menu) just opens the deck of the first one.
+        .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| desktop::show_deck(app)))
+        .plugin(tauri_plugin_autostart::init(MacosLauncher::LaunchAgent, None))
+        .plugin(
+            tauri_plugin_global_shortcut::Builder::new()
+                .with_handler(|app, shortcut, event| {
+                    if event.state() == ShortcutState::Pressed && *shortcut == desktop::hotkey() {
+                        desktop::press_hotkey(app);
+                    }
+                })
+                .build(),
+        )
         .setup(|app| {
             place_orb(app)?;
-            let child = core::ensure_core().unwrap_or_else(|err| {
-                // The orb still opens and keeps retrying; it shows "core offline".
-                eprintln!("could not start Rosie's core: {err}");
-                None
-            });
-            app.manage(CoreProcess(Mutex::new(child)));
+            app.manage(CoreProcess(Mutex::new(start_core())));
+            if let Err(err) = app.global_shortcut().register(desktop::hotkey()) {
+                eprintln!("Ctrl+Space is taken by another app: {err}"); // tray still works
+            }
+            desktop::enable_autostart_on_first_run(app.handle());
+            desktop::build_tray(app.handle(), restart_core)?;
             Ok(())
         })
         .on_window_event(|window, event| {
@@ -77,11 +120,7 @@ pub fn run() {
         .expect("Rosie's window failed to start");
     app.run(|handle, event| {
         if let RunEvent::Exit = event {
-            // Only stop the core if the orb started it.
-            if let Some(mut child) = handle.state::<CoreProcess>().0.lock().unwrap().take() {
-                let _ = child.kill();
-                let _ = child.wait();
-            }
+            stop_core(handle);
         }
     });
 }

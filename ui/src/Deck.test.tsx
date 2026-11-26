@@ -115,3 +115,21 @@ test("offline core disables the box", () => {
   expect((screen.getByLabelText("Message Rosie") as HTMLInputElement).disabled).toBe(true);
   expect(screen.getByText("core offline")).toBeTruthy();
 });
+
+test("failed health checks are listed with a re-check button", () => {
+  const core = mount();
+  core.say({
+    type: "health",
+    ok: false,
+    checks: [
+      { name: "Python", status: "ok", detail: "3.12" },
+      { name: "LLM", status: "fail", detail: "not reachable (run `ollama serve`)" },
+    ],
+  });
+  expect(screen.getByText("LLM")).toBeTruthy();
+  expect(screen.queryByText("Python")).toBeNull();
+  fireEvent.click(screen.getByText("Check again"));
+  expect(core.socket.sent).toEqual([{ type: "health" }]);
+  core.say({ type: "health", ok: true, checks: [] });
+  expect(screen.queryByText("Needs a hand")).toBeNull();
+});

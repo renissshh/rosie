@@ -1,13 +1,25 @@
 import { initialModel, look, NUDGE_MS, OrbAction, OrbModel, orbReducer } from "./orbState";
 import { CoreEvent } from "./protocol";
 
-const open = orbReducer(initialModel, { kind: "status", status: "open" });
 const ev = (event: CoreEvent, now = 0): OrbAction => ({ kind: "event", event, now });
 const run = (model: OrbModel, ...actions: OrbAction[]) => actions.reduce(orbReducer, model);
+const HEALTHY: CoreEvent = { type: "health", ok: true, checks: [] };
+const SICK: CoreEvent = { type: "health", ok: false, checks: [{ name: "LLM", status: "fail", detail: "run `ollama serve`" }] };
+const open = run(initialModel, { kind: "status", status: "open" }, ev(HEALTHY));
 
-test("offline until the core answers", () => {
+test("offline until the core answers and has checked its health", () => {
   expect(look(initialModel)).toBe("offline");
-  expect(look(open)).toBe("idle");
+  const connected = orbReducer(initialModel, { kind: "status", status: "open" });
+  expect(look(connected)).toBe("offline");
+  expect(look(orbReducer(connected, ev(HEALTHY)))).toBe("idle");
+});
+
+test("a failed health check shows as unwell, below activity and nudges", () => {
+  const sick = orbReducer(open, ev(SICK));
+  expect(look(sick)).toBe("unwell");
+  expect(look(orbReducer(sick, ev({ type: "state", state: "thinking" })))).toBe("thinking");
+  expect(look(orbReducer(sick, ev({ type: "nudge", title: "R", text: "gym" })))).toBe("nudge");
+  expect(look(orbReducer(sick, ev(HEALTHY)))).toBe("idle");
 });
 
 test("voice and typed activity shows as listening, thinking, speaking", () => {
@@ -20,7 +32,7 @@ test("voice and typed activity shows as listening, thinking, speaking", () => {
 test("losing the core goes offline and forgets a stale activity", () => {
   const model = run(open, ev({ type: "state", state: "speaking" }), { kind: "status", status: "closed" });
   expect(look(model)).toBe("offline");
-  expect(look(orbReducer(model, { kind: "status", status: "open" }))).toBe("idle");
+  expect(look(orbReducer(model, { kind: "status", status: "open" }))).toBe("offline"); // until re-checked
 });
 
 test("a nudge pulses until dismissed", () => {

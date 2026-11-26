@@ -40,19 +40,20 @@ CI runs the React tests on Ubuntu and the Rust tests on the Windows runner.
 | --- | --- |
 | `transparent`, `decorations: false`, `shadow: false` | Only the round orb paints; no square frame |
 | `alwaysOnTop` | The Day Ring stays visible over other apps |
-| `skipTaskbar` | Rosie lives in the tray (Sprint 5), not the taskbar |
+| `skipTaskbar` | Rosie lives in the tray, not the taskbar |
 | CSP `connect-src ws://127.0.0.1:8765` | The page may talk only to Rosie's own core on this laptop |
 
 ## What the orb shows
 
 | Look | What you see | When |
 | --- | --- | --- |
-| Offline | Grey, no glow | The core isn't running or reachable (the orb keeps retrying) |
+| Offline | Grey, no glow | The core isn't running or reachable (the orb keeps retrying), or is still checking its health |
 | Idle | Slow breathing teal glow | Default |
 | Listening | Inner ring opens and pulses | "Hey Rosie", or a click on the orb |
 | Thinking | Three particles orbit the core | The agent is working on an answer |
 | Speaking | Core pulses quickly | Her voice is playing |
 | Nudge | Amber pulse | A reminder fired; click to dismiss, fades after a minute |
+| Unwell | Dashed amber ring | A health check failed (e.g. Ollama not running); click for details |
 | Focus | Dimmed | A study block is on: only urgent reminders show, the rest wait until it ends |
 
 When two apply, the one higher in the table (below Offline) wins: a reminder that fires
@@ -103,6 +104,24 @@ next to it. Closing it only hides it.
 
 Without `--voice`, clicking the orb opens the deck too, since typing is the way to talk.
 
+## At login, tray, Ctrl+Space, health
+
+- **Start at login**: the installed app (`npm run tauri build`) turns this on the first
+  time it runs, as a per-user startup entry (no admin rights). Untick **Start at login**
+  in the tray menu to stop it. Development builds never register themselves.
+- **Tray icon** (next to the clock): Open Command Deck, Start at login, Restart Rosie's
+  core, Quit Rosie. The orb has no taskbar button; the tray is how you quit.
+- **Ctrl+Space** anywhere in Windows works like a click on the orb: listen (with
+  `--voice`), or open the deck. If another app already owns Ctrl+Space, the tray still works.
+- **One Rosie**: starting the app again just opens the Command Deck of the running one.
+- **Health check**: the core runs the same checks as `rosie doctor` when it starts, every
+  five minutes, and on demand. The orb stays grey until the first result; if something
+  failed (usually "Ollama isn't running") it shows a dashed amber ring, and a click opens
+  the deck with what failed, how to fix it, and a **Check again** button.
+- At login the orb starts the core as `rosie serve`. If `rosie` isn't on your PATH
+  (e.g. it lives in a virtual environment), set a user environment variable
+  `ROSIE_CORE=D:\Rosie\.venv\Scripts\rosie.exe` once.
+
 ## How the orb talks to Rosie's core
 
 The orb is only a face; everything Rosie knows lives in the Python core. They talk over
@@ -124,6 +143,7 @@ quits. The orb keeps reconnecting (1 s, 2 s, 4 s ... 10 s), so starting order ne
 | `ping` / `pong` | orb -> core -> orb | Is the core alive? |
 | `ask {text}` | orb -> core | A typed message; answered with `reply {text}` |
 | `listen` | orb -> core | Start listening now (click on the orb, Ctrl+Space) |
+| `health` | orb -> core | Run the health check now; answered (and pushed every 5 min) as `health {ok, checks}` |
 | `state {state}` | core -> orb | `idle`, `listening`, `thinking` or `speaking` |
 | `focus {on, label}` | core -> orb | A study block started (`on: true`) or ended |
 | `day {date, blocks, marks}` | core -> orb | Today's Day Ring: blocks `{start, end, kind, label}`, marks `{at, kind, text}` |

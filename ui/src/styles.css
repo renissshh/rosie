@@ -162,6 +162,16 @@ body,
   border-color: var(--amber);
 }
 
+/* unwell: a health check failed; steady amber ring, no pulse */
+.orb[data-look="unwell"] {
+  box-shadow: 0 0 12px rgba(245, 158, 11, 0.35);
+}
+
+.orb[data-look="unwell"] .core {
+  border-color: var(--amber);
+  border-style: dashed;
+}
+
 /* focus: dimmed, stays out of the way */
 .orb[data-look="focus"] {
   opacity: 0.45;
@@ -273,7 +283,8 @@ body[data-window="deck"] {
   padding: 10px 12px;
 }
 
-.card.confirm {
+.card.confirm,
+.card.problem {
   border-color: var(--amber);
 }
 
