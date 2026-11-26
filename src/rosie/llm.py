@@ -18,6 +18,7 @@ from typing import Any, Protocol
 import httpx
 
 from rosie.config import LLMConfig
+from rosie.ratelimit import RateLimiter
 
 log = logging.getLogger("rosie.llm")
 
@@ -86,6 +87,8 @@ class OpenAICompatibleLLM:
         self.config = config
         self._http = http or httpx.Client(timeout=config.timeout_s)
         self._environ = os.environ if environ is None else environ
+        # Free tiers cut you off (or bill) past their quota: stay under it.
+        self.limiter = RateLimiter(config.max_per_minute) if config.max_per_minute else None
 
     def _headers(self) -> dict[str, str]:
         headers = {"Content-Type": "application/json"}
@@ -99,6 +102,9 @@ class OpenAICompatibleLLM:
     def chat(
         self, messages: list[dict[str, Any]], tools: list[dict[str, Any]] | None = None
     ) -> ChatResult:
+        if self.limiter is not None and not self.limiter.allow():
+            wait = self.limiter.retry_after()
+            raise LLMError(f"{self.config.model} rate limit reached; try again in {wait:.0f} s")
         payload: dict[str, Any] = {"model": self.config.model, "messages": messages}
         if tools:
             payload["tools"] = tools

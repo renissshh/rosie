@@ -38,6 +38,7 @@ from rosie.memory import FactStore, register_memory_tools
 from rosie.notify import DesktopNotifier, Router
 from rosie.prompt import now_in
 from rosie.quiz import register_quiz_tool
+from rosie.ratelimit import RateLimiter
 from rosie.reminders import Reminders, register_reminder_tools
 from rosie.review import REVIEW_JOB, NightlyReview, run_in_terminal
 from rosie.scheduler import Scheduler
@@ -47,6 +48,8 @@ from rosie.tasks import TaskStore, register_task_tools
 from rosie.tools import ToolRegistry
 from rosie.training import TrainingLog, register_training_tools
 from rosie.vault_writer import VaultWriter
+
+TELEGRAM_PER_MINUTE = 20
 
 
 def find_config(arg: str | None, environ: Mapping[str, str] | None = None) -> Path | None:
@@ -148,8 +151,11 @@ def fact_store(config: RosieConfig) -> FactStore:
     return FactStore(vault_writer(config), config.data_dir / "index" / "memory.db")
 
 
-def telegram_reply(text: str, review: NightlyReview, session) -> str:
-    """While the nightly review is running, messages are its answers; otherwise chat."""
+def telegram_reply(text: str, review: NightlyReview, session, limiter=None) -> str:
+    """While the nightly review is running, messages are its answers; otherwise chat.
+    More than 20 messages a minute get a "slow down" instead of reaching the agent."""
+    if limiter is not None and not limiter.allow():
+        return f"Slow down a little: try again in {limiter.retry_after():.0f} s."
     if review.active:
         return review.answer(text)
     if text.strip().lower() in {"/review", "review"}:
@@ -217,7 +223,8 @@ def run_telegram(
     session = build_session(
         config, build_registry(config, reminders), context=context.build, ask_user=bot.ask
     )
-    bot.on_message = lambda text: telegram_reply(text, review, session)
+    limiter = RateLimiter(TELEGRAM_PER_MINUTE)
+    bot.on_message = lambda text: telegram_reply(text, review, session, limiter)
     add_voice_notes(bot, config)
     sync = start_vault_sync(config, stop) if server else None
     print(("Rosie server" if server else "Rosie") + " is listening on Telegram. Ctrl+C to stop.")

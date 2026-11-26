@@ -23,6 +23,7 @@ llm:
 #   model: "gemini-2.5-flash"
 #   base_url: "https://generativelanguage.googleapis.com/v1beta/openai/"
 #   api_key_env: "GEMINI_API_KEY"
+#   max_per_minute: 10        # stay under the free tier's requests-per-minute quota
 
 max_agent_steps: 8
 

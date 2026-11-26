@@ -38,6 +38,7 @@ class LLMConfig(BaseModel):
     base_url: str = "http://localhost:11434/v1"
     api_key_env: str | None = None  # name of the env var holding the key, never the key
     timeout_s: float = 120.0
+    max_per_minute: int | None = Field(default=None, ge=1)  # free-tier quota; None = no limit
 
 
 WEEKDAYS = ("mon", "tue", "wed", "thu", "fri", "sat", "sun")

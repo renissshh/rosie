@@ -35,11 +35,13 @@ from websockets.asyncio.server import ServerConnection, serve
 from websockets.exceptions import ConnectionClosed
 
 from rosie import __version__
+from rosie.ratelimit import RateLimiter
 
 log = logging.getLogger("rosie.bridge")
 
 DEFAULT_PORT = 8765
 MAX_MESSAGE = 64 * 1024
+ASKS_PER_MINUTE = 20
 # Tauri serves the page from tauri://localhost (macOS/Linux) or http://tauri.localhost
 # (Windows); Vite's dev server is on port 1420. None = no Origin header (not a browser).
 ALLOWED_ORIGINS = [
@@ -233,16 +235,21 @@ class ChatHandlers:
         bridge: Bridge,
         ask: Callable[[str], str],
         after: Callable[[], None] | None = None,
+        limiter: RateLimiter | None = None,
     ) -> None:
         self.bridge = bridge
         self.ask = ask
         self.after = after  # e.g. refresh the deck's cards: she may have added a task
+        self.limiter = limiter or RateLimiter(ASKS_PER_MINUTE)
         bridge.on("ask", self.on_ask)
 
     def on_ask(self, message: Event) -> Event:
         text = str(message.get("text", "")).strip()
         if not text:
             raise BridgeError("empty message")
+        if not self.limiter.allow():
+            wait = self.limiter.retry_after()
+            raise BridgeError(f"too many messages; try again in {wait:.0f} s")
         self.bridge.emit({"type": "transcript", "role": "you", "text": text})
         self.bridge.emit({"type": "state", "state": "thinking"}, keep=True)
         try:
