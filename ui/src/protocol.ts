@@ -5,6 +5,25 @@
 
 export type OrbState = "idle" | "listening" | "thinking" | "speaking";
 
+export type BlockKind = "study" | "college" | "gym" | "review" | "sleep" | "other";
+export interface DayBlock {
+  start: string; // "HH:MM", local time
+  end: string; // may be earlier than start: the block crosses midnight
+  kind: BlockKind;
+  label: string;
+}
+export interface DayMark {
+  at: string; // "HH:MM"
+  kind: "reminder" | "brief" | "review";
+  text: string;
+}
+export interface DayData {
+  type: "day";
+  date: string; // YYYY-MM-DD
+  blocks: DayBlock[];
+  marks: DayMark[];
+}
+
 /** What the core sends. */
 export type CoreEvent =
   | { type: "hello"; version: string }
@@ -12,6 +31,7 @@ export type CoreEvent =
   | { type: "state"; state: OrbState }
   | { type: "nudge"; title: string; text: string; urgent?: boolean }
   | { type: "focus"; on: boolean; label?: string }
+  | DayData
   | { type: "transcript"; role: "you" | "rosie"; text: string }
   | { type: "reply"; text: string; id?: string | number }
   | { type: "confirm"; id: string; question: string }

@@ -17,7 +17,7 @@ from pathlib import Path
 from typing import Literal
 
 import yaml
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 WINDOWS_DATA_DIR = Path("D:/Rosie")
 
@@ -39,6 +39,40 @@ class LLMConfig(BaseModel):
     timeout_s: float = 120.0
 
 
+WEEKDAYS = ("mon", "tue", "wed", "thu", "fri", "sat", "sun")
+BlockKind = Literal["study", "college", "gym", "review", "sleep", "other"]
+
+
+class DayBlock(BaseModel):
+    """One block of the usual day, drawn on the orb's Day Ring. Times are local HH:MM;
+    a block may cross midnight (sleep 23:30 -> 06:30)."""
+
+    start: str
+    end: str
+    kind: BlockKind = "other"
+    label: str = ""
+    days: list[str] = Field(default_factory=lambda: list(WEEKDAYS))
+
+    @field_validator("start", "end")
+    @classmethod
+    def _clock(cls, value: str) -> str:
+        hour, sep, minute = value.partition(":")
+        if not (sep and hour.isdigit() and minute.isdigit() and len(minute) == 2):
+            raise ValueError(f"time must be HH:MM, got {value!r}")
+        if int(hour) > 23 or int(minute) > 59:
+            raise ValueError(f"no such time {value!r}")
+        return f"{int(hour):02d}:{minute}"
+
+    @field_validator("days")
+    @classmethod
+    def _days(cls, value: list[str]) -> list[str]:
+        days = [d.strip().lower()[:3] for d in value]
+        unknown = [d for d in days if d not in WEEKDAYS]
+        if unknown:
+            raise ValueError(f"unknown day(s) {unknown}; use mon..sun")
+        return days
+
+
 class RosieConfig(BaseModel):
     data_dir: Path = Field(default_factory=default_data_dir)
     vault_dir: Path | None = None  # Rosie's own vault; defaults to <data_dir>/rosie-vault
@@ -50,6 +84,7 @@ class RosieConfig(BaseModel):
     brief_time: str = "07:30"  # morning brief, local time (HH:MM)
     review_time: str = "22:00"  # nightly review
     voice: str = "kokoro-emma"  # see `rosie voices`
+    day_blocks: list[DayBlock] = Field(default_factory=list)  # the orb's Day Ring
 
     @model_validator(mode="after")
     def _derive_paths(self) -> RosieConfig:

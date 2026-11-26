@@ -60,7 +60,7 @@ Status legend: `[x]` done, `[ ]` to do.
 - [x] Tauri 2 + React shell, transparent always-on-top window
 - [x] WebSocket bridge to the Python core (sidecar)
 - [x] Orb states: idle, listening, thinking, speaking, nudge, focus
-- [ ] Day Ring: today's blocks drawn live from the schedule
+- [x] Day Ring: today's blocks drawn live from the schedule
 - [ ] Command Deck: brief cards, text box, transcript, quick log
 - [ ] Autostart at login, health check, tray, Ctrl+Space
 - [ ] Merge, tag v0.5

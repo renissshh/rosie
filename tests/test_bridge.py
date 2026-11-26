@@ -216,7 +216,8 @@ def test_rosie_serve_answers_on_the_websocket(tmp_path):
     config = tmp_path / "rosie.yaml"
     config.write_text(
         f"data_dir: {tmp_path.as_posix()}/data\n"
-        "llm:\n  base_url: http://127.0.0.1:9/v1\n  timeout_s: 2\n",
+        "llm:\n  base_url: http://127.0.0.1:9/v1\n  timeout_s: 2\n"
+        'day_blocks:\n  - {start: "00:00", end: "23:59", kind: gym}\n',
         encoding="utf-8",
     )
     port, stop = free_port(), threading.Event()
@@ -232,6 +233,8 @@ def test_rosie_serve_answers_on_the_websocket(tmp_path):
         with ws:
             assert recv(ws)["type"] == "hello"
             assert recv(ws) == {"type": "state", "state": "idle"}
+            day = recv(ws, "day")  # the Day Ring, sent as soon as the core starts
+            assert day["blocks"][0]["kind"] == "gym"
             ws.send(json.dumps({"type": "ask", "text": "hi"}))
             assert "Ollama" in recv(ws, "reply", timeout=20)["text"]  # no LLM here: friendly
             ws.send(json.dumps({"type": "listen"}))

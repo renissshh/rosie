@@ -287,6 +287,7 @@ def run_serve(
     """The core the orb talks to: agent, reminders and brief behind one local WebSocket."""
     from rosie.bridge import Bridge, BridgeError, ChatHandlers, orb_notifier
     from rosie.chat import build_session
+    from rosie.day import DayWatcher, watch_forever
 
     load_dotenv(Path(".env"))
     config = load_config(find_config(config_arg))
@@ -310,6 +311,12 @@ def run_serve(
                 return "I can't reach my brain right now. Is Ollama running? Try `ollama serve`."
 
     ChatHandlers(bridge, ask)
+    watcher = DayWatcher(config.day_blocks, reminders.scheduler.jobs, bridge.emit)
+    threading.Thread(
+        target=watch_forever,
+        args=(watcher, lambda: now_in(config.timezone), scheduler_stop),
+        daemon=True,
+    ).start()
     if not (voice and start_orb_voice(config, bridge, ask)):
 
         def no_voice(message):

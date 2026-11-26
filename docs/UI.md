@@ -63,6 +63,24 @@ Voice in the orb: start the core with `rosie serve --voice` (needs the `[voice]`
 see docs/VOICE.md). Clicking the orb then works like saying "Hey Rosie", and also stops
 her mid-sentence. Without `--voice`, the orb works by typing (Command Deck).
 
+## The Day Ring
+
+Around the orb is a 24-hour clock of your day: midnight at the top, 06:00 on the right,
+noon at the bottom, 18:00 on the left. A small white hand shows the time.
+
+- **Blocks** come from `day_blocks` in `config/rosie.yaml` (see `config/rosie.example.yaml`):
+  college blue, study teal, gym pink, review purple, sleep slate. Each block is faint
+  until its time passes, then it fills in, so you can see at a glance how much of the
+  plan is behind you. Blocks may cross midnight (sleep 23:30 -> 06:30) and can be
+  limited to some weekdays (`days: [mon, tue]`).
+- **Dots** are today's reminders, the morning brief and the nightly review. When a
+  reminder fires, its dot pulses amber with the orb.
+- **Focus**: while a `study` block is on, the core tells the orb (`focus`), the orb
+  dims and holds back reminders that aren't urgent until the block ends.
+
+The core recomputes the ring every 30 seconds (`src/rosie/day.py`) and only sends it
+when something changed: a new reminder, or a new day after midnight.
+
 ## How the orb talks to Rosie's core
 
 The orb is only a face; everything Rosie knows lives in the Python core. They talk over
@@ -86,6 +104,7 @@ quits. The orb keeps reconnecting (1 s, 2 s, 4 s ... 10 s), so starting order ne
 | `listen` | orb -> core | Start listening now (click on the orb, Ctrl+Space) |
 | `state {state}` | core -> orb | `idle`, `listening`, `thinking` or `speaking` |
 | `focus {on, label}` | core -> orb | A study block started (`on: true`) or ended |
+| `day {date, blocks, marks}` | core -> orb | Today's Day Ring: blocks `{start, end, kind, label}`, marks `{at, kind, text}` |
 | `transcript {role, text}` | core -> orb | One line of the conversation (`you` or `rosie`) |
 | `nudge {title, text, urgent}` | core -> orb | A reminder fired (`urgent` ones get through focus) |
 | `confirm {id, question}` | core -> orb | The safety gate wants your yes/no |

@@ -61,3 +61,10 @@ test("clicking a pulsing nudge dismisses it instead", () => {
   expect(screen.getByRole("button").dataset.look).toBe("idle");
   expect(socket.sent).toEqual([]);
 });
+
+test("the Day Ring draws what the core sends", () => {
+  const { core } = mount();
+  core.open();
+  core.say({ type: "day", date: "2026-11-26", blocks: [{ start: "19:00", end: "21:00", kind: "study", label: "DBMS" }], marks: [] });
+  expect(screen.getByRole("img", { name: "Today's plan" }).querySelectorAll("path.block")).toHaveLength(1);
+});
