@@ -69,7 +69,7 @@ Status legend: `[x]` done, `[ ]` to do.
 - [x] Study coach: sessions, weak-subject detection, quizzes from notes
 - [x] Training coach: voice set logging, progression, stall alerts
 - [x] Always-on server option (Docker) sharing rosie-vault via git
-- [ ] Identity: emblem SVG, icons, wordmark
+- [ ] Identity: emblem SVG, icons, wordmark **[needs you]**: approve the Day Ring orb direction first (`docs/images/orb-looks.png`)
 - [x] Hardening: error recovery, vault backups, rate limits
 - [x] Windows installer script, user guide, demo GIF
 - [ ] Final tests, merge, tag v1.0
