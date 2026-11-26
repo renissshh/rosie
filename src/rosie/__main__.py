@@ -10,6 +10,7 @@
     rosie voices                  list Rosie's voices
     rosie voice [--config PATH]   hands-free: "Hey Rosie", then talk (needs [voice])
     rosie say TEXT [--voice NAME] [--out FILE.wav]  hear (or save) a voice
+    rosie serve [--config PATH]   Rosie's core for the orb UI (WebSocket on 127.0.0.1:8765)
     rosie --version
 
 Config file lookup: --config, then the ROSIE_CONFIG env var, then
@@ -226,6 +227,41 @@ def run_voice(config_arg: str | None) -> int:
     return 0
 
 
+def run_serve(config_arg: str | None, port: int, stop: threading.Event | None = None) -> int:
+    """The core the orb talks to: agent, reminders and brief behind one local WebSocket."""
+    from rosie.bridge import Bridge, ChatHandlers, orb_notifier
+    from rosie.chat import build_session
+
+    load_dotenv(Path(".env"))
+    config = load_config(find_config(config_arg))
+    bridge = Bridge(port=port)
+    stop = stop or threading.Event()
+    reminders, scheduler_stop = start_reminders(
+        config, orb_notifier(bridge, desktop_or_none()), on_review=None
+    )
+    context = ContextBuilder(fact_store(config), task_store(config))
+    session = build_session(
+        config, build_registry(config, reminders), context=context.build, ask_user=bridge.ask_user
+    )
+
+    def ask(text: str) -> str:
+        try:
+            return session.ask(text).text
+        except LLMError:
+            return "I can't reach my brain right now. Is Ollama running? Try `ollama serve`."
+
+    ChatHandlers(bridge, ask)
+    bridge.emit({"type": "state", "state": "idle"}, keep=True)
+    print(f"Rosie's core is up on ws://127.0.0.1:{port}. Ctrl+C to stop.")
+    try:
+        bridge.run_forever(stop)
+    except KeyboardInterrupt:
+        pass
+    finally:
+        scheduler_stop.set()
+    return 0
+
+
 def run_say(text: str, voice: str | None, out: str | None, config_arg: str | None) -> int:
     from rosie.audio import play, write_wav
     from rosie.tts import Speaker, TTSError
@@ -285,6 +321,9 @@ def _parser() -> argparse.ArgumentParser:
     say.add_argument("--voice", help="voice name (default: `voice` in rosie.yaml)")
     say.add_argument("--out", help="save to a WAV file instead of playing")
     say.add_argument("--config", help="path to rosie.yaml")
+    serve = sub.add_parser("serve", help="run Rosie's core for the orb UI")
+    serve.add_argument("--config", help="path to rosie.yaml")
+    serve.add_argument("--port", type=int, default=8765, help="WebSocket port (default 8765)")
     review = sub.add_parser("review", help="nightly review in the terminal")
     review.add_argument("--config", help="path to rosie.yaml")
     telegram = sub.add_parser("telegram", help="answer on Telegram from your phone")
@@ -340,6 +379,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         return 0
     if args.command == "telegram":
         return run_telegram(args.config)
+    if args.command == "serve":
+        return run_serve(args.config, args.port)
     if args.command == "vault":
         from rosie.vault import GitSync, ensure_layout
 

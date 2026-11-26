@@ -1,9 +1,18 @@
 //! Rosie's desktop shell: one small, transparent, always-on-top window (the orb).
 //!
-//! The window itself is described in `tauri.conf.json`; here we only place it in
-//! the bottom-right corner of the screen it opens on, above the taskbar.
+//! The window itself is described in `tauri.conf.json`; here we place it in the
+//! bottom-right corner of the screen it opens on, above the taskbar, and start
+//! Rosie's Python core next to it (see `core.rs`).
 
-use tauri::{Manager, PhysicalPosition, PhysicalSize};
+pub mod core;
+
+use std::process::Child;
+use std::sync::Mutex;
+
+use tauri::{Manager, PhysicalPosition, PhysicalSize, RunEvent};
+
+/// The core process the orb started (None if it was already running).
+struct CoreProcess(Mutex<Option<Child>>);
 
 /// Gap between the orb window and the screen edges, in logical pixels.
 pub const MARGIN: f64 = 24.0;
@@ -44,13 +53,28 @@ fn place_orb(app: &tauri::App) -> tauri::Result<()> {
 }
 
 pub fn run() {
-    tauri::Builder::default()
+    let app = tauri::Builder::default()
         .setup(|app| {
             place_orb(app)?;
+            let child = core::ensure_core().unwrap_or_else(|err| {
+                // The orb still opens and keeps retrying; it shows "core offline".
+                eprintln!("could not start Rosie's core: {err}");
+                None
+            });
+            app.manage(CoreProcess(Mutex::new(child)));
             Ok(())
         })
-        .run(tauri::generate_context!())
+        .build(tauri::generate_context!())
         .expect("Rosie's window failed to start");
+    app.run(|handle, event| {
+        if let RunEvent::Exit = event {
+            // Only stop the core if the orb started it.
+            if let Some(mut child) = handle.state::<CoreProcess>().0.lock().unwrap().take() {
+                let _ = child.kill();
+                let _ = child.wait();
+            }
+        }
+    });
 }
 
 #[cfg(test)]
