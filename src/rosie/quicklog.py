@@ -69,8 +69,12 @@ class QuickLog:
             self._append(study_note(now.date()), "Study", now, line)
             return f"Logged study: {subject}" + (f", {minutes} min" if minutes else "")
         if kind == "gym":
-            self._append(training_note(now.date()), "Training", now, f"- {now:%H:%M} {text}")
-            return f"Logged training: {text}"
+            from rosie.training import parse_sets  # "bench 3x8 40kg" -> the coach's format
+
+            entry = parse_sets(text)
+            line = entry.line(now) if entry else f"- {now:%H:%M} {text}"
+            self._append(training_note(now.date()), "Training", now, line)
+            return f"Logged training: {entry.describe() if entry else text}"
         if kind == "task":
             task = self.tasks.add(text)
             return f"Added task: {task.title}"

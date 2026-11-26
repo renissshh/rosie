@@ -62,7 +62,7 @@ def test_study_goes_to_todays_study_note(quicklog, tmp_path):
 def test_gym_goes_to_the_training_log(quicklog, tmp_path):
     quicklog.log("gym", "bench 3x8 40kg")
     note = (tmp_path / "training-log" / "2026-11-26.md").read_text(encoding="utf-8")
-    assert note.endswith("- 19:40 bench 3x8 40kg\n")
+    assert note.endswith("- 19:40 Bench press 3x8 @ 40 kg\n")  # the coach's format
 
 
 def test_task_becomes_a_real_task(quicklog):

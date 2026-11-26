@@ -43,6 +43,7 @@ from rosie.search import NoteIndex, register_search_tool
 from rosie.study import StudyTimer, register_study_tools
 from rosie.tasks import TaskStore, register_task_tools
 from rosie.tools import ToolRegistry
+from rosie.training import TrainingLog, register_training_tools
 from rosie.vault_writer import VaultWriter
 
 
@@ -65,6 +66,9 @@ def build_registry(config: RosieConfig, reminders: Reminders | None = None) -> T
     register_search_tool(registry, note_index(config))
     register_study_tools(registry, study_timer(config), config.subjects, lambda: today_in(config))
     register_quiz_tool(registry, config)
+    register_training_tools(
+        registry, TrainingLog(vault_writer(config), lambda: now_in(config.timezone))
+    )
     if reminders is not None:
         register_reminder_tools(registry, reminders)
     return registry

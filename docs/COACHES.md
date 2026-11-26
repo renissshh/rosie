@@ -46,3 +46,25 @@ She asks five of them at random ("What is 1NF?"), one at a time, checks each ans
 (generously: your words, not the note's) and gives a score. Code blocks, quotes, tables,
 checkboxes and long sentences are skipped. A note with no such lines still works: she
 writes the questions herself from its text.
+
+## Training coach
+
+Say or type a set the way you'd say it at the gym; spoken numbers work too.
+
+| You say | Logged in `training-log/2026-11-26.md` |
+| --- | --- |
+| "bench 3x8 at 40 kg" | `- 18:10 Bench press 3x8 @ 40 kg` |
+| "squat five by five sixty kilos" | `- 18:20 Squat 5x5 @ 60 kg` |
+| "pull ups 3 sets of 10" | `- 18:30 Pull ups 3x10` (bodyweight) |
+
+`log_sets` writes the line and answers with advice when there is some; the Command
+Deck's **+ Gym** button uses the same format (anything it can't read, like
+"30 min cardio", is kept as you typed it). `training_report` sums up the last 90 days.
+Short names work: bench, OHP, DL, RDL.
+
+The rules, one per exercise:
+
+- **Progression**: the same weight for the same sets x reps in two sessions in a row
+  means you own it. Next time add 2.5 kg (5 kg for squat, deadlift, leg press).
+- **Stall**: the top weight hasn't gone up over the last three sessions, spread over
+  two weeks or more. Rosie suggests a deload to 90% (rounded to 2.5 kg) or a new rep range.

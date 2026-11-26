@@ -99,7 +99,7 @@ next to it. Closing it only hides it.
 | Button | Writes to rosie-vault | Example |
 | --- | --- | --- |
 | + Study | `study-log/YYYY-MM-DD.md`, `- 19:40 DBMS normal forms (45 min)` | `DBMS normal forms 45m` (`1h 30m`, `90 mins` work too) |
-| + Gym | `training-log/YYYY-MM-DD.md`, `- 18:10 bench 3x8 40kg` | `push day, bench 3x8 40kg` |
+| + Gym | `training-log/YYYY-MM-DD.md`, `- 18:10 Bench press 3x8 @ 40 kg` | `bench 3x8 40kg` (see docs/COACHES.md) |
 | + Task | a new task in `tasks/tasks.md` | `buy notebook` |
 
 Without `--voice`, clicking the orb opens the deck too, since typing is the way to talk.
