@@ -63,7 +63,7 @@ Status legend: `[x]` done, `[ ]` to do.
 - [x] Day Ring: today's blocks drawn live from the schedule
 - [x] Command Deck: brief cards, text box, transcript, quick log
 - [x] Autostart at login, health check, tray, Ctrl+Space
-- [ ] Merge, tag v0.5
+- [x] Merge, tag v0.5, walkthrough doc (`docs/WALKTHROUGH-v0.5.md`)
 
 ## Sprint 6: Coaches + ship (Dec 30 to Jan 5) -> v1.0
 - [ ] Study coach: sessions, weak-subject detection, quizzes from notes
