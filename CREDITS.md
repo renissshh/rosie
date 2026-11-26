@@ -20,3 +20,4 @@ contributed ideas, not code.
 | [Tauri](https://github.com/tauri-apps/tauri) | MIT / Apache-2.0 | Dependency: the orb's native window, plus its autostart, global-shortcut and single-instance plugins (`ui/src-tauri`) |
 | [React](https://github.com/facebook/react), [Vite](https://github.com/vitejs/vite), [Vitest](https://github.com/vitest-dev/vitest) | MIT | Dependency: the orb's page and its tests (`ui/`) |
 | [PyAV](https://github.com/PyAV-Org/PyAV) | BSD-3-Clause | Dependency (with faster-whisper): decode/encode Telegram voice notes |
+| [Ollama](https://github.com/ollama/ollama) | MIT | Local LLM runtime; also the optional `ollama` service in `docker-compose.yml` |

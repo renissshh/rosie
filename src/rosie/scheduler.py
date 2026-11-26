@@ -162,6 +162,10 @@ class Scheduler:
             self.cancel(job.id)
         return self.add(kind, rule)
 
+    def drop(self, kind: str) -> int:
+        """Remove every job of this kind (e.g. when another machine owns the brief)."""
+        return sum(self.cancel(job.id) for job in self.jobs() if job.kind == kind)
+
     def jobs(self) -> list[Job]:
         with closing(self._connect()) as db:
             rows = db.execute("SELECT * FROM jobs ORDER BY next_run").fetchall()

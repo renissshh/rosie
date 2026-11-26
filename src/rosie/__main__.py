@@ -11,6 +11,7 @@
     rosie voice [--config PATH]   hands-free: "Hey Rosie", then talk (needs [voice])
     rosie say TEXT [--voice NAME] [--out FILE.wav]  hear (or save) a voice
     rosie serve [--voice]         Rosie's core for the orb UI (WebSocket on 127.0.0.1:8765)
+    rosie server [--config PATH]  always-on mode: Telegram + reminders + vault git sync
     rosie --version
 
 Config file lookup: --config, then the ROSIE_CONFIG env var, then
@@ -27,7 +28,7 @@ from datetime import date
 from pathlib import Path
 
 from rosie import __version__
-from rosie.brief import MorningBrief, build_brief, coach_notes
+from rosie.brief import BRIEF_JOB, MorningBrief, build_brief, coach_notes
 from rosie.builtin_tools import register_builtin_tools
 from rosie.config import RosieConfig, load_config, load_dotenv
 from rosie.context import ContextBuilder
@@ -90,19 +91,25 @@ def start_reminders(
     """
     scheduler = Scheduler(config.data_dir / "index" / "scheduler.db", config.timezone)
     reminders = Reminders(scheduler, notify, vault_writer(config), config.timezone)
-    coach = lambda: coach_notes(config.vault_dir, config.subjects, today_in(config))  # noqa: E731
-    MorningBrief(task_store(config), vault_writer(config), notify, reminders, coach).schedule(
-        config.brief_time
-    )
-    scheduler.on(
-        REVIEW_JOB,
-        lambda job: (
-            on_review()
-            if on_review
-            else notify("Rosie", "Time for your nightly review: run `rosie review`.")
-        ),
-    )
-    scheduler.ensure_daily(REVIEW_JOB, config.review_time)
+    if config.clock == "server":
+        # An always-on server sends the brief and review; this machine only keeps its
+        # own reminders, so nothing arrives twice.
+        scheduler.drop(BRIEF_JOB)
+        scheduler.drop(REVIEW_JOB)
+    else:
+        coach = lambda: coach_notes(config.vault_dir, config.subjects, today_in(config))  # noqa: E731
+        MorningBrief(task_store(config), vault_writer(config), notify, reminders, coach).schedule(
+            config.brief_time
+        )
+        scheduler.on(
+            REVIEW_JOB,
+            lambda job: (
+                on_review()
+                if on_review
+                else notify("Rosie", "Time for your nightly review: run `rosie review`.")
+            ),
+        )
+        scheduler.ensure_daily(REVIEW_JOB, config.review_time)
     stop = threading.Event()
     threading.Thread(target=scheduler.run_forever, args=(stop,), daemon=True).start()
     return reminders, stop
@@ -167,7 +174,27 @@ def add_voice_notes(bot, config: RosieConfig) -> bool:
     return True
 
 
-def run_telegram(config_arg: str | None, environ: Mapping[str, str] | None = None) -> int:
+def start_vault_sync(config: RosieConfig, stop: threading.Event) -> threading.Thread:
+    """Keep rosie-vault in step with its git remote in the background."""
+    from rosie.vault import GitSync, ensure_layout, sync_forever
+
+    ensure_layout(config.vault_dir)
+    thread = threading.Thread(
+        target=sync_forever,
+        args=(GitSync(config.vault_dir), stop, config.vault_sync_minutes * 60),
+        daemon=True,
+    )
+    thread.start()
+    return thread
+
+
+def run_telegram(
+    config_arg: str | None,
+    environ: Mapping[str, str] | None = None,
+    server: bool = False,
+) -> int:
+    """`rosie telegram`; with server=True it is `rosie server`: the same bot, plus the
+    vault kept in sync with git, for an always-on machine (see docs/SERVER.md)."""
     from rosie.chat import build_session
     from rosie.telegram import TelegramError, bot_from_env
 
@@ -188,13 +215,16 @@ def run_telegram(config_arg: str | None, environ: Mapping[str, str] | None = Non
     )
     bot.on_message = lambda text: telegram_reply(text, review, session)
     add_voice_notes(bot, config)
-    print("Rosie is listening on Telegram. Ctrl+C to stop.")
+    sync = start_vault_sync(config, stop) if server else None
+    print(("Rosie server" if server else "Rosie") + " is listening on Telegram. Ctrl+C to stop.")
     try:
         bot.run_forever(stop)
     except KeyboardInterrupt:
         pass
     finally:
         stop.set()
+        if sync is not None:
+            sync.join(timeout=60)  # last push before exit
     return 0
 
 
@@ -338,6 +368,7 @@ def run_serve(
         args=([health.tick, watcher.tick, deck.refresh], now, scheduler_stop),
         daemon=True,
     ).start()
+    start_vault_sync(config, scheduler_stop)
     if not (voice and start_orb_voice(config, bridge, ask)):
 
         def no_voice(message):
@@ -418,6 +449,8 @@ def _parser() -> argparse.ArgumentParser:
     serve.add_argument("--config", help="path to rosie.yaml")
     serve.add_argument("--port", type=int, default=8765, help="WebSocket port (default 8765)")
     serve.add_argument("--voice", action="store_true", help='also listen for "Hey Rosie"')
+    server = sub.add_parser("server", help="always-on mode (Docker): Telegram + vault sync")
+    server.add_argument("--config", help="path to rosie.yaml")
     review = sub.add_parser("review", help="nightly review in the terminal")
     review.add_argument("--config", help="path to rosie.yaml")
     telegram = sub.add_parser("telegram", help="answer on Telegram from your phone")
@@ -475,6 +508,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         return 0
     if args.command == "telegram":
         return run_telegram(args.config)
+    if args.command == "server":
+        return run_telegram(args.config, server=True)
     if args.command == "serve":
         return run_serve(args.config, args.port, voice=args.voice)
     if args.command == "vault":

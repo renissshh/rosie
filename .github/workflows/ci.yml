@@ -63,3 +63,15 @@ jobs:
       - name: Rust tests
         working-directory: ui/src-tauri
         run: cargo test
+
+  server-image:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build the always-on server image
+        run: docker build -t rosie:ci .
+      - name: Smoke test
+        run: |
+          docker run --rm rosie:ci rosie --version
+          docker run --rm rosie:ci sh -c 'rosie server; test $? -eq 1'  # no Telegram token: explains, exits 1
+          docker run --rm rosie:ci whoami | grep -qx rosie                # not root

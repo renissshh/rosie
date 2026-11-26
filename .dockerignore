@@ -1,0 +1,10 @@
+# Only the Python core goes into the server image.
+.git
+.github
+ui
+tests
+docs
+.env
+**/__pycache__
+.pytest_cache
+.ruff_cache

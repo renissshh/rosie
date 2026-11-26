@@ -1,0 +1,26 @@
+# Rosie's always-on server (docs/SERVER.md). Secrets come from .env, never from here.
+#
+#   docker compose up -d                 Rosie + a local Ollama
+#   docker compose logs -f rosie
+services:
+  rosie:
+    build: .
+    restart: unless-stopped
+    env_file: .env                       # TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, optional GEMINI_API_KEY
+    environment:
+      ROSIE_LLM_BASE_URL: http://ollama:11434/v1
+      ROSIE_TIMEZONE: Asia/Kolkata
+    volumes:
+      - rosie-data:/data                 # rosie-vault, scheduler, memory index
+    depends_on:
+      - ollama
+
+  ollama:                                # free local model; drop this service to use only the cloud fallback
+    image: ollama/ollama
+    restart: unless-stopped
+    volumes:
+      - ollama-models:/root/.ollama
+
+volumes:
+  rosie-data:
+  ollama-models:

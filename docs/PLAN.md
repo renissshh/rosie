@@ -68,7 +68,7 @@ Status legend: `[x]` done, `[ ]` to do.
 ## Sprint 6: Coaches + ship (Dec 30 to Jan 5) -> v1.0
 - [x] Study coach: sessions, weak-subject detection, quizzes from notes
 - [x] Training coach: voice set logging, progression, stall alerts
-- [ ] Always-on server option (Docker) sharing rosie-vault via git
+- [x] Always-on server option (Docker) sharing rosie-vault via git
 - [ ] Identity: emblem SVG, icons, wordmark
 - [ ] Hardening: error recovery, vault backups, rate limits
 - [ ] Windows installer script, user guide, demo GIF

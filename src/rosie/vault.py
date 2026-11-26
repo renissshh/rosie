@@ -128,3 +128,15 @@ def _why(exc: BaseException) -> str:
     """The most useful line of a git failure: the last line of stderr, else the error."""
     text = (getattr(exc, "stderr", None) or str(exc)).strip()
     return text.splitlines()[-1] if text else type(exc).__name__
+
+
+def sync_forever(sync: GitSync, stop, every_s: float, message: str = "rosie: sync vault") -> None:
+    """Commit, pull and push rosie-vault every `every_s` seconds until `stop` is set, and
+    once more on the way out, so a laptop and an always-on server share one vault."""
+    while True:
+        result = sync.sync(message)
+        if result.error:
+            log.info("vault sync: %s", result.error)
+        if stop.wait(every_s):
+            sync.sync(message)
+            return

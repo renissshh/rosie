@@ -95,6 +95,10 @@ class RosieConfig(BaseModel):
     day_blocks: list[DayBlock] = Field(default_factory=list)  # the orb's Day Ring
     countdowns: list[Countdown] = Field(default_factory=list)  # shown on the Command Deck
     subjects: list[str] = Field(default_factory=list)  # for the study coach, e.g. [DBMS, OS]
+    # Which machine sends the morning brief and nightly review: "here", or "server" when
+    # an always-on `rosie server` does it (then this laptop doesn't, so nothing doubles).
+    clock: Literal["here", "server"] = "here"
+    vault_sync_minutes: int = Field(default=10, ge=1)  # git pull/push of rosie-vault
 
     @model_validator(mode="after")
     def _derive_paths(self) -> RosieConfig:

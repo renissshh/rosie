@@ -52,3 +52,9 @@ countdowns:
 # Your subjects, for the study coach ("how's my studying?"). A study-log line counts for
 # a subject when it mentions it: "DBMS normal forms 45m" -> DBMS.
 subjects: [DBMS, OS, Java, Maths]
+
+# Always-on server (docs/SERVER.md). "server" = an always-on `rosie server` sends the
+# morning brief and nightly review, so this laptop doesn't.
+clock: here
+# How often rosie-vault is pulled and pushed while Rosie runs (minutes).
+vault_sync_minutes: 10
