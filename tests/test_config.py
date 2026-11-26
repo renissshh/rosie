@@ -86,3 +86,23 @@ def test_load_dotenv_does_not_override(tmp_path):
     env = {"KEY": "already"}
     load_dotenv(f, env)
     assert env == {"KEY": "already", "NEW": "x"}
+
+
+def test_env_next_to_the_repo_is_found_from_anywhere(tmp_path, monkeypatch):
+    """At login the orb starts the core from some other folder: .env must still load."""
+    import os
+
+    from rosie.__main__ import load_env
+
+    repo = tmp_path / "rosie"
+    (repo / "config").mkdir(parents=True)
+    (repo / "config" / "rosie.yaml").write_text("timezone: Asia/Kolkata\n", encoding="utf-8")
+    (repo / ".env").write_text("ROSIE_TEST_SECRET=from-repo\n", encoding="utf-8")
+    elsewhere = tmp_path / "elsewhere"
+    elsewhere.mkdir()
+    monkeypatch.chdir(elsewhere)
+    monkeypatch.setenv("ROSIE_CONFIG", str(repo / "config" / "rosie.yaml"))
+    monkeypatch.setenv("ROSIE_TEST_SECRET", "")  # recorded, so it's removed after the test
+    monkeypatch.delenv("ROSIE_TEST_SECRET")
+    assert load_env(None) == repo / "config" / "rosie.yaml"
+    assert os.environ["ROSIE_TEST_SECRET"] == "from-repo"

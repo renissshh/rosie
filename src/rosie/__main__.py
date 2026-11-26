@@ -15,7 +15,8 @@
     rosie --version
 
 Config file lookup: --config, then the ROSIE_CONFIG env var, then
-./config/rosie.yaml. A `.env` in the current folder is loaded for secrets.
+./config/rosie.yaml. Secrets come from `.env` in the current folder, then from the
+repo folder above config/ (so the core finds them when the orb starts it at login).
 """
 
 from __future__ import annotations
@@ -60,6 +61,17 @@ def find_config(arg: str | None, environ: Mapping[str, str] | None = None) -> Pa
         return Path(environ["ROSIE_CONFIG"])
     default = Path("config") / "rosie.yaml"
     return default if default.is_file() else None
+
+
+def load_env(config_arg: str | None) -> Path | None:
+    """Find rosie.yaml and load secrets from `.env`: the current folder first, then the
+    folder above `config/` (the repo). The second matters when the orb starts the core at
+    login, from a folder that isn't the repo. Variables already set always win."""
+    config_path = find_config(config_arg)
+    load_dotenv(Path(".env"))
+    if config_path is not None:
+        load_dotenv(config_path.resolve().parent.parent / ".env")
+    return config_path
 
 
 def build_registry(config: RosieConfig, reminders: Reminders | None = None) -> ToolRegistry:
@@ -208,8 +220,7 @@ def run_telegram(
     from rosie.chat import build_session
     from rosie.telegram import TelegramError, bot_from_env
 
-    load_dotenv(Path(".env"))
-    config = load_config(find_config(config_arg))
+    config = load_config(load_env(config_arg))
     try:
         bot = bot_from_env(os.environ if environ is None else environ)
     except TelegramError as exc:
@@ -274,8 +285,7 @@ def run_voice(config_arg: str | None) -> int:
     from rosie.chat import build_session
     from rosie.tts import TTSError
 
-    load_dotenv(Path(".env"))
-    config = load_config(find_config(config_arg))
+    config = load_config(load_env(config_arg))
     terminal = lambda title, text: print(f"[{title}] {text}")  # noqa: E731
     holder: dict = {}
     try:
@@ -347,8 +357,7 @@ def run_serve(
     from rosie.health import HealthFeed
     from rosie.quicklog import DeckFeed, QuickLog
 
-    load_dotenv(Path(".env"))
-    config = load_config(find_config(config_arg))
+    config = load_config(load_env(config_arg))
     bridge = Bridge(port=port)
     stop = stop or threading.Event()
     reminders, scheduler_stop = start_reminders(
@@ -481,8 +490,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     if args.command == "chat":
         from rosie.chat import build_session, run_chat
 
-        load_dotenv(Path(".env"))
-        config = load_config(find_config(args.config))
+        config = load_config(load_env(args.config))
         context = ContextBuilder(fact_store(config), task_store(config))
         terminal = lambda title, text: print(f"\n[{title}] {text}")  # noqa: E731
         reminders, stop = start_reminders(config, Router(desktop_or_none(), terminal))
@@ -494,8 +502,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     if args.command == "doctor":
         from rosie.doctor import report, run_checks
 
-        load_dotenv(Path(".env"))
-        text, code = report(run_checks(load_config(find_config(args.config))))
+        text, code = report(run_checks(load_config(load_env(args.config))))
         print(text)
         return code
     if args.command == "brief":
