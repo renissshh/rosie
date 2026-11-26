@@ -3,6 +3,10 @@
 Rosie coaches study and training from her own logs in rosie-vault. No LLM is needed for
 the numbers: plain code reads the notes, and the agent puts the result in words.
 
+Every morning brief ends with a **Coach** section when there's something to say: up to
+two subjects that need attention, and any lift that has stalled. Nothing logged yet
+means nothing is said (no nagging about an empty log).
+
 ## Study coach
 
 Set your subjects once in `config/rosie.yaml`:

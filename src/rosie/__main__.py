@@ -27,7 +27,7 @@ from datetime import date
 from pathlib import Path
 
 from rosie import __version__
-from rosie.brief import MorningBrief, build_brief
+from rosie.brief import MorningBrief, build_brief, coach_notes
 from rosie.builtin_tools import register_builtin_tools
 from rosie.config import RosieConfig, load_config, load_dotenv
 from rosie.context import ContextBuilder
@@ -90,7 +90,8 @@ def start_reminders(
     """
     scheduler = Scheduler(config.data_dir / "index" / "scheduler.db", config.timezone)
     reminders = Reminders(scheduler, notify, vault_writer(config), config.timezone)
-    MorningBrief(task_store(config), vault_writer(config), notify, reminders).schedule(
+    coach = lambda: coach_notes(config.vault_dir, config.subjects, today_in(config))  # noqa: E731
+    MorningBrief(task_store(config), vault_writer(config), notify, reminders, coach).schedule(
         config.brief_time
     )
     scheduler.on(
@@ -450,7 +451,9 @@ def main(argv: Sequence[str] | None = None) -> int:
         print(text)
         return code
     if args.command == "brief":
-        print(build_brief(task_store(load_config(find_config(args.config)))), end="")
+        config = load_config(find_config(args.config))
+        coach = lambda: coach_notes(config.vault_dir, config.subjects, today_in(config))  # noqa: E731
+        print(build_brief(task_store(config), coach=coach), end="")
         return 0
     if args.command == "voices":
         from rosie.tts import VOICES

@@ -113,3 +113,30 @@ def test_cli_brief_and_chat_schedules_it(tmp_path, monkeypatch, capsys):
     reminders, stop = start_reminders(RosieConfig(data_dir=tmp_path / "R2"), lambda t, x: None)
     stop.set()
     assert [j.rule for j in reminders.scheduler.jobs() if j.kind == BRIEF_JOB] == ["daily@07:30"]
+
+
+def test_coach_section_lists_what_the_coaches_found(env):
+    tasks, *_ = env
+    text = build_brief(tasks, coach=lambda: ["OS: last studied 8 days ago"])
+    assert text.endswith("## Coach\n- OS: last studied 8 days ago\n")
+    assert "## Coach" not in build_brief(tasks, coach=lambda: [])
+
+
+def test_coach_notes_from_the_logs(tmp_path):
+    from rosie.brief import coach_notes
+
+    def log(folder, days_ago, line):
+        day = TODAY - timedelta(days=days_ago)
+        note = tmp_path / folder / f"{day:%Y-%m-%d}.md"
+        note.parent.mkdir(parents=True, exist_ok=True)
+        with note.open("a", encoding="utf-8") as f:
+            f.write(line + "\n")
+
+    assert coach_notes(tmp_path, ["DBMS", "OS"], TODAY) == []  # nothing logged: quiet
+    log("study-log", 1, "- 19:00 DBMS keys (60 min)")
+    log("study-log", 9, "- 19:00 OS paging (60 min)")
+    for days_ago in (20, 13, 6):
+        log("training-log", days_ago, "- 18:00 Bench press 3x8 @ 40 kg")
+    notes = coach_notes(tmp_path, ["DBMS", "OS"], TODAY)
+    assert notes[0] == "OS: last studied 9 days ago"
+    assert notes[1].startswith("Bench press has been stuck at 40 kg")

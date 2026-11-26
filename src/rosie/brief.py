@@ -9,6 +9,9 @@
     - Submit DBMS assignment, due Wed 25 Nov
     ## Avoiding?
     - "Clean desk" has been open for 9 days. 10 minutes on it today?
+    ## Coach
+    - OS: last studied 8 days ago
+    - Bench press has been stuck at 40 kg for 3 sessions. Try a deload to 35 kg, ...
 
 It is written to today's daily note in rosie-vault and a short version is sent as
 a notification. Being plain code, it works even when Ollama is down.
@@ -16,7 +19,9 @@ a notification. Being plain code, it works even when Ollama is down.
 
 from __future__ import annotations
 
+from collections.abc import Callable, Sequence
 from datetime import date
+from pathlib import Path
 
 from rosie.reminders import REMINDER, Reminders
 from rosie.tasks import Task, TaskStore
@@ -44,7 +49,25 @@ def avoided_task(tasks: list[Task], today: date, skip: set[str]) -> Task | None:
     return min(old, key=lambda t: t.created, default=None)  # type: ignore[arg-type]
 
 
-def build_brief(tasks: TaskStore, reminders: Reminders | None = None) -> str:
+def coach_notes(vault: Path, subjects: Sequence[str], today: date) -> list[str]:
+    """What the study and training coaches want you to know today (weak subjects, stalls)."""
+    from rosie.study import WINDOW_DAYS, read_sessions, subject_stats, weak_subjects
+    from rosie.training import stall_alerts
+
+    since = date.fromordinal(today.toordinal() - WINDOW_DAYS + 1)
+    sessions = read_sessions(vault, since, today)
+    notes = []
+    if sessions:  # no study logged at all isn't news every single morning
+        stats = subject_stats(sessions, list(subjects))
+        notes += [f"{s.subject}: {why}" for s, why in weak_subjects(stats, today)[:2]]
+    return notes + stall_alerts(vault, today)
+
+
+def build_brief(
+    tasks: TaskStore,
+    reminders: Reminders | None = None,
+    coach: Callable[[], list[str]] | None = None,
+) -> str:
     today = tasks.today()
     open_tasks = tasks.open_tasks()
     top = open_tasks[:3]
@@ -72,6 +95,10 @@ def build_brief(tasks: TaskStore, reminders: Reminders | None = None) -> str:
             "## Avoiding?",
             f'- "{avoided.title}" has been open for {days} days. 10 minutes on it today?',
         ]
+
+    notes = coach() if coach else []
+    if notes:
+        lines += ["", "## Coach"] + [f"- {note}" for note in notes]
     return "\n".join(lines) + "\n"
 
 
@@ -86,14 +113,17 @@ def short_brief(tasks: TaskStore) -> str:
 class MorningBrief:
     """Scheduler handler: write the brief to the daily note and notify."""
 
-    def __init__(self, tasks: TaskStore, writer: VaultWriter, notify, reminders=None) -> None:
+    def __init__(
+        self, tasks: TaskStore, writer: VaultWriter, notify, reminders=None, coach=None
+    ) -> None:
         self.tasks = tasks
         self.writer = writer
         self.notify = notify
         self.reminders = reminders
+        self.coach = coach
 
     def run(self, job=None) -> str:
-        text = build_brief(self.tasks, self.reminders)
+        text = build_brief(self.tasks, self.reminders, self.coach)
         self.writer.append(f"daily/{self.tasks.today():%Y-%m-%d}.md", text)
         self.notify("Good morning", short_brief(self.tasks))
         return text
