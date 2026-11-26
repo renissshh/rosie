@@ -1,6 +1,6 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import Deck from "./Deck";
-import { addLine, daysLeft, MAX_LINES, nowNext } from "./deck";
+import { addLine, daysLeft, MAX_LINES, nowNext } from "./deckModel";
 import { DayData } from "./protocol";
 import { fakeCore } from "./testing";
 import { windowKind } from "./windows";

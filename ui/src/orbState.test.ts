@@ -1,4 +1,4 @@
-import { initialModel, look, NUDGE_MS, OrbAction, OrbModel, orbReducer } from "./orb";
+import { initialModel, look, NUDGE_MS, OrbAction, OrbModel, orbReducer } from "./orbState";
 import { CoreEvent } from "./protocol";
 
 const open = orbReducer(initialModel, { kind: "status", status: "open" });

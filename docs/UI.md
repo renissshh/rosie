@@ -56,7 +56,7 @@ CI runs the React tests on Ubuntu and the Rust tests on the Windows runner.
 | Focus | Dimmed | A study block is on: only urgent reminders show, the rest wait until it ends |
 
 When two apply, the one higher in the table (below Offline) wins: a reminder that fires
-while she is speaking pulses once she's done. The rules are in `ui/src/orb.ts` and are
+while she is speaking pulses once she's done. The rules are in `ui/src/orbState.ts` and are
 unit-tested. With "reduce animations" on in Windows, the looks are colour-only.
 
 Voice in the orb: start the core with `rosie serve --voice` (needs the `[voice]` extras,

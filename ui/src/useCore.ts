@@ -4,7 +4,7 @@
  */
 import { useEffect, useReducer, useRef } from "react";
 import { BridgeClient } from "./bridge";
-import { initialModel, orbReducer } from "./orb";
+import { initialModel, orbReducer } from "./orbState";
 import { CoreEvent, OrbRequest } from "./protocol";
 
 export function useCore(makeClient: () => BridgeClient = () => new BridgeClient(), onEvent?: (e: CoreEvent) => void) {

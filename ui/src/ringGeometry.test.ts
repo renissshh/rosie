@@ -1,4 +1,4 @@
-import { arcPath, currentBlock, dueMarks, elapsed, nextBlock, point, span, toMinutes } from "./dayRing";
+import { arcPath, currentBlock, dueMarks, elapsed, nextBlock, point, span, toMinutes } from "./ringGeometry";
 import { DayBlock, DayMark } from "./protocol";
 
 const block = (start: string, end: string, kind: DayBlock["kind"] = "study"): DayBlock => ({ start, end, kind, label: kind });

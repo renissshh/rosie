@@ -6,7 +6,7 @@
 import { useEffect, useState } from "react";
 import { BridgeClient } from "./bridge";
 import { DayRing } from "./DayRing";
-import { look } from "./orb";
+import { look } from "./orbState";
 import { Orb } from "./Orb";
 import { CoreEvent, DayData } from "./protocol";
 import { useCore } from "./useCore";

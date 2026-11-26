@@ -5,8 +5,8 @@
  */
 import { FormEvent, useEffect, useState } from "react";
 import { BridgeClient } from "./bridge";
-import { minutesOf } from "./dayRing";
-import { addLine, daysLeft, Line, nowNext } from "./deck";
+import { minutesOf } from "./ringGeometry";
+import { addLine, daysLeft, Line, nowNext } from "./deckModel";
 import { BriefData, CoreEvent, DayData } from "./protocol";
 import { useCore } from "./useCore";
 

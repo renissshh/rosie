@@ -75,7 +75,7 @@ body,
   }
 }
 
-/* ---- the orb: one look per state (data-look), see src/orb.ts ---- */
+/* ---- the orb: one look per state (data-look), see src/orbState.ts ---- */
 .orb {
   position: relative;
   width: 120px;

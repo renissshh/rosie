@@ -1,4 +1,4 @@
-import { Look, LOOK_LABEL } from "./orb";
+import { Look, LOOK_LABEL } from "./orbState";
 
 /**
  * The orb itself. `data-look` picks the animation in styles.css; the three particle

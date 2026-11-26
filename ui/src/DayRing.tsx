@@ -4,7 +4,7 @@
  * the brief/review are dots; a small hand shows "now". While a nudge is showing, the
  * reminder that is due pulses amber. Clicks pass through to the orb.
  */
-import { arcPath, DAY, dueMarks, elapsed, KIND_COLOR, minutesOf, point, span, toMinutes } from "./dayRing";
+import { arcPath, DAY, dueMarks, elapsed, KIND_COLOR, minutesOf, point, span, toMinutes } from "./ringGeometry";
 import { DayData } from "./protocol";
 
 const SIZE = 200;

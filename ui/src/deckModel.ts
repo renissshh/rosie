@@ -2,7 +2,7 @@
  * Pure helpers for the Command Deck: the Now / Next line, countdown wording and the
  * live transcript (kept short so the window never grows without limit).
  */
-import { currentBlock, nextBlock, toMinutes } from "./dayRing";
+import { currentBlock, nextBlock, toMinutes } from "./ringGeometry";
 import { DayData } from "./protocol";
 
 export const MAX_LINES = 50;
