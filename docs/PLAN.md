@@ -57,7 +57,7 @@ Status legend: `[x]` done, `[ ]` to do.
 - [x] Merge, tag v0.4, walkthrough doc (`docs/WALKTHROUGH-v0.4.md`)
 
 ## Sprint 5: Orb UI + autostart (Dec 23 to Dec 29) -> v0.5 "opens at login"
-- [ ] Tauri 2 + React shell, transparent always-on-top window
+- [x] Tauri 2 + React shell, transparent always-on-top window
 - [ ] WebSocket bridge to the Python core (sidecar)
 - [ ] Orb states: idle, listening, thinking, speaking, nudge, focus
 - [ ] Day Ring: today's blocks drawn live from the schedule

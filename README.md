@@ -54,6 +54,8 @@ ruff check . && ruff format --check .
 python -m pytest
 ```
 
+The orb UI lives in `ui/` (Tauri 2 + React): see [docs/UI.md](docs/UI.md).
+
 Configuration: copy `config/rosie.example.yaml` to `config/rosie.yaml` and `.env.example`
 to `.env`. Secrets live only in `.env`.
 
