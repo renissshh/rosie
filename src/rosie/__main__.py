@@ -35,6 +35,7 @@ from rosie.llm import LLMError
 from rosie.memory import FactStore, register_memory_tools
 from rosie.notify import DesktopNotifier, Router
 from rosie.prompt import now_in
+from rosie.quiz import register_quiz_tool
 from rosie.reminders import Reminders, register_reminder_tools
 from rosie.review import REVIEW_JOB, NightlyReview, run_in_terminal
 from rosie.scheduler import Scheduler
@@ -63,6 +64,7 @@ def build_registry(config: RosieConfig, reminders: Reminders | None = None) -> T
     register_task_tools(registry, task_store(config))
     register_search_tool(registry, note_index(config))
     register_study_tools(registry, study_timer(config), config.subjects, lambda: today_in(config))
+    register_quiz_tool(registry, config)
     if reminders is not None:
         register_reminder_tools(registry, reminders)
     return registry

@@ -66,7 +66,7 @@ Status legend: `[x]` done, `[ ]` to do.
 - [x] Merge, tag v0.5, walkthrough doc (`docs/WALKTHROUGH-v0.5.md`)
 
 ## Sprint 6: Coaches + ship (Dec 30 to Jan 5) -> v1.0
-- [ ] Study coach: sessions, weak-subject detection, quizzes from notes
+- [x] Study coach: sessions, weak-subject detection, quizzes from notes
 - [ ] Training coach: voice set logging, progression, stall alerts
 - [ ] Always-on server option (Docker) sharing rosie-vault via git
 - [ ] Identity: emblem SVG, icons, wordmark

@@ -28,3 +28,21 @@ A subject **needs attention** when, over the last 14 days, it was:
 3. studied for less than half the average minutes per subject.
 
 Worst first: never-studied subjects, then the longest-neglected.
+
+### Quizzes from your notes
+
+"Quiz me on DBMS" runs `quiz_from_note`: Rosie opens the note in your vault (read only)
+and picks out facts written in the usual Obsidian ways:
+
+```markdown
+Primary key :: a column that uniquely identifies each row      <- spaced-repetition style
+- **1NF**: every column holds a single, atomic value           <- term, colon
+- inner join - rows that match in both tables                   <- term, dash
+## Normalisation                                                <- heading, then the
+Organising tables to reduce redundancy. ...                        first sentence
+```
+
+She asks five of them at random ("What is 1NF?"), one at a time, checks each answer
+(generously: your words, not the note's) and gives a score. Code blocks, quotes, tables,
+checkboxes and long sentences are skipped. A note with no such lines still works: she
+writes the questions herself from its text.
