@@ -23,14 +23,25 @@ body,
   place-items: center;
 }
 
+/* ---- the orb: one look per state (data-look), see src/orb.ts ---- */
 .orb {
+  position: relative;
   width: 120px;
   height: 120px;
+  padding: 0;
+  border: none;
   border-radius: 50%;
+  cursor: pointer;
   display: grid;
   place-items: center;
   background: radial-gradient(circle at 50% 40%, #1f2933, var(--core) 70%);
   box-shadow: 0 0 18px rgba(45, 212, 191, 0.35);
+  transition: opacity 0.6s, filter 0.6s, box-shadow 0.4s;
+}
+
+.orb:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 4px;
 }
 
 .core {
@@ -38,4 +49,117 @@ body,
   height: 56px;
   border-radius: 50%;
   border: 3px solid var(--ring);
+  box-sizing: border-box;
+}
+
+.particles {
+  position: absolute;
+  inset: 0;
+  display: none;
+}
+
+.particles i {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 6px;
+  height: 6px;
+  margin: -3px;
+  border-radius: 50%;
+  background: var(--ring);
+  animation: orbit 1.4s linear infinite;
+}
+
+.particles i:nth-child(2) {
+  animation-delay: -0.47s;
+}
+
+.particles i:nth-child(3) {
+  animation-delay: -0.93s;
+}
+
+/* idle: slow breathing glow */
+.orb[data-look="idle"] {
+  animation: breathe 5s ease-in-out infinite;
+}
+
+/* listening: the inner ring opens up and pulses */
+.orb[data-look="listening"] .core {
+  animation: listen 0.9s ease-in-out infinite alternate;
+  border-width: 4px;
+}
+
+/* thinking: particles orbit the core */
+.orb[data-look="thinking"] .particles {
+  display: block;
+}
+
+/* speaking: the core pulses quickly, like a voice */
+.orb[data-look="speaking"] .core {
+  background: rgba(45, 212, 191, 0.25);
+  animation: speak 0.35s ease-in-out infinite alternate;
+}
+
+/* nudge: amber pulse */
+.orb[data-look="nudge"] {
+  box-shadow: 0 0 22px rgba(245, 158, 11, 0.6);
+  animation: nudge 1.2s ease-in-out infinite;
+}
+
+.orb[data-look="nudge"] .core {
+  border-color: var(--amber);
+}
+
+/* focus: dimmed, stays out of the way */
+.orb[data-look="focus"] {
+  opacity: 0.45;
+  box-shadow: none;
+}
+
+/* offline: grey, no glow */
+.orb[data-look="offline"] {
+  filter: grayscale(1);
+  opacity: 0.6;
+  box-shadow: none;
+}
+
+@keyframes breathe {
+  50% {
+    box-shadow: 0 0 28px rgba(45, 212, 191, 0.55);
+  }
+}
+
+@keyframes listen {
+  to {
+    transform: scale(1.35);
+  }
+}
+
+@keyframes speak {
+  to {
+    transform: scale(1.12);
+  }
+}
+
+@keyframes nudge {
+  50% {
+    box-shadow: 0 0 34px rgba(245, 158, 11, 0.9);
+  }
+}
+
+@keyframes orbit {
+  from {
+    transform: rotate(0deg) translateX(40px);
+  }
+  to {
+    transform: rotate(360deg) translateX(40px);
+  }
+}
+
+/* People who turn off animations in Windows get still states (colour only). */
+@media (prefers-reduced-motion: reduce) {
+  .orb,
+  .orb * {
+    animation: none !important;
+  }
 }

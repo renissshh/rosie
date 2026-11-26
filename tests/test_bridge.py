@@ -234,6 +234,58 @@ def test_rosie_serve_answers_on_the_websocket(tmp_path):
             assert recv(ws) == {"type": "state", "state": "idle"}
             ws.send(json.dumps({"type": "ask", "text": "hi"}))
             assert "Ollama" in recv(ws, "reply", timeout=20)["text"]  # no LLM here: friendly
+            ws.send(json.dumps({"type": "listen"}))
+            assert "voice is off" in recv(ws, "error")["text"]
     finally:
         stop.set()
         thread.join(5)
+
+
+class FakeVoiceLoop:
+    def __init__(self, on_state, on_transcript):
+        self.on_state, self.on_transcript, self.woken = on_state, on_transcript, 0
+
+    def wake_now(self):
+        self.woken += 1
+        self.on_state("listening")
+
+    def run(self, frames):
+        for _ in frames:
+            pass
+
+
+class FakeMic:
+    def frames(self):
+        return iter(())
+
+
+def test_orb_voice_shows_voice_states_and_wakes_on_listen(bridge, tmp_path):
+    from rosie.__main__ import start_orb_voice
+    from rosie.config import RosieConfig
+
+    made = []
+
+    def build(config, think, on_state, on_transcript):
+        made.append(FakeVoiceLoop(on_state, on_transcript))
+        return made[0], FakeMic()
+
+    loop = start_orb_voice(RosieConfig(data_dir=tmp_path), bridge, lambda t: t, build=build)
+    assert loop is made[0]
+    with connect(url(bridge)) as ws:
+        recv(ws, "hello")
+        ws.send(json.dumps({"type": "listen"}))
+        assert recv(ws) == {"type": "state", "state": "listening"}
+        loop.on_transcript("you", "what's next?")
+        assert recv(ws) == {"type": "transcript", "role": "you", "text": "what's next?"}
+    assert loop.woken == 1
+
+
+def test_orb_voice_that_cannot_start_returns_none(bridge, tmp_path, capsys):
+    from rosie.__main__ import start_orb_voice
+    from rosie.config import RosieConfig
+
+    def build(*args, **kwargs):
+        raise ImportError("install the [voice] extras")
+
+    assert start_orb_voice(RosieConfig(data_dir=tmp_path), bridge, str, build=build) is None
+    assert "Voice off" in capsys.readouterr().out

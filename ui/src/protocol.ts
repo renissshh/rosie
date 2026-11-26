@@ -10,7 +10,8 @@ export type CoreEvent =
   | { type: "hello"; version: string }
   | { type: "pong"; id?: string | number }
   | { type: "state"; state: OrbState }
-  | { type: "nudge"; title: string; text: string }
+  | { type: "nudge"; title: string; text: string; urgent?: boolean }
+  | { type: "focus"; on: boolean; label?: string }
   | { type: "transcript"; role: "you" | "rosie"; text: string }
   | { type: "reply"; text: string; id?: string | number }
   | { type: "confirm"; id: string; question: string }
@@ -20,6 +21,7 @@ export type CoreEvent =
 export type OrbRequest =
   | { type: "ping"; id?: string | number }
   | { type: "ask"; text: string; id?: string | number }
+  | { type: "listen" }
   | { type: "confirm_reply"; id: string; allow: boolean };
 
 export const CORE_URL = "ws://127.0.0.1:8765";

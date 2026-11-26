@@ -10,7 +10,7 @@
     rosie voices                  list Rosie's voices
     rosie voice [--config PATH]   hands-free: "Hey Rosie", then talk (needs [voice])
     rosie say TEXT [--voice NAME] [--out FILE.wav]  hear (or save) a voice
-    rosie serve [--config PATH]   Rosie's core for the orb UI (WebSocket on 127.0.0.1:8765)
+    rosie serve [--voice]         Rosie's core for the orb UI (WebSocket on 127.0.0.1:8765)
     rosie --version
 
 Config file lookup: --config, then the ROSIE_CONFIG env var, then
@@ -184,38 +184,58 @@ def run_telegram(config_arg: str | None, environ: Mapping[str, str] | None = Non
     return 0
 
 
-def run_voice(config_arg: str | None) -> int:
-    """Wire microphone, wake word, speech-to-text, the agent and the voice together."""
+def build_voice_loop(config: RosieConfig, think, on_state, on_transcript=None):
+    """Microphone, wake word, speech-to-text and voice, wired into a VoiceLoop.
+
+    Returns (loop, microphone). Raises RuntimeError/TTSError/ImportError when the
+    [voice] extras or models are missing.
+    """
     from rosie.audio import Microphone
-    from rosie.chat import build_session
     from rosie.stt import WhisperTranscriber
-    from rosie.tts import Speaker, TTSError
+    from rosie.tts import Speaker
     from rosie.voice_loop import SoundDevicePlayer, VoiceLoop
     from rosie.wakeword import OpenWakeWord, SpokenName
 
-    load_dotenv(Path(".env"))
-    config = load_config(find_config(config_arg))
     models = config.data_dir / "models"
-    try:
-        mic, player = Microphone(), SoundDevicePlayer()
-        stt = WhisperTranscriber("base.en", models)
-        speaker = Speaker(config.voice, models)
-        trained = models / "hey_rosie.onnx"
-        wake = OpenWakeWord(str(trained)) if trained.is_file() else SpokenName(stt)
-    except (RuntimeError, TTSError, ImportError) as exc:
-        print(exc)
-        return 1
-    terminal = lambda title, text: print(f"[{title}] {text}")  # noqa: E731
-    reminders, stop = start_reminders(config, Router(desktop_or_none(), terminal))
-    context = ContextBuilder(fact_store(config), task_store(config))
-    session = build_session(config, build_registry(config, reminders), context=context.build)
+    mic, player = Microphone(), SoundDevicePlayer()
+    stt = WhisperTranscriber("base.en", models)
+    speaker = Speaker(config.voice, models)
+    trained = models / "hey_rosie.onnx"
+    wake = OpenWakeWord(str(trained)) if trained.is_file() else SpokenName(stt)
     loop = VoiceLoop(
         wake,
         stt,
-        lambda text: session.ask(text).text,
+        think,
         speaker.synthesize,
         player,
-        on_state=lambda state: print(f"[{state}]"),
+        on_state=on_state,
+        on_transcript=on_transcript or (lambda role, text: None),
+    )
+    return loop, mic
+
+
+def run_voice(config_arg: str | None) -> int:
+    """Wire microphone, wake word, speech-to-text, the agent and the voice together."""
+    from rosie.chat import build_session
+    from rosie.tts import TTSError
+
+    load_dotenv(Path(".env"))
+    config = load_config(find_config(config_arg))
+    terminal = lambda title, text: print(f"[{title}] {text}")  # noqa: E731
+    holder: dict = {}
+    try:
+        loop, mic = build_voice_loop(
+            config,
+            lambda text: holder["session"].ask(text).text,
+            on_state=lambda state: print(f"[{state}]"),
+        )
+    except (RuntimeError, TTSError, ImportError) as exc:
+        print(exc)
+        return 1
+    reminders, stop = start_reminders(config, Router(desktop_or_none(), terminal))
+    context = ContextBuilder(fact_store(config), task_store(config))
+    holder["session"] = build_session(
+        config, build_registry(config, reminders), context=context.build
     )
     print('Say "Hey Rosie". Ctrl+C to stop.')
     try:
@@ -227,9 +247,45 @@ def run_voice(config_arg: str | None) -> int:
     return 0
 
 
-def run_serve(config_arg: str | None, port: int, stop: threading.Event | None = None) -> int:
+def start_orb_voice(config: RosieConfig, bridge, think, build=None):
+    """`rosie serve --voice`: the hands-free loop in a thread, its states shown on the orb.
+
+    Returns the VoiceLoop, or None (with the reason printed) if voice can't start;
+    the orb then works by typing only.
+    """
+    from rosie.tts import TTSError
+
+    build = build or build_voice_loop
+    try:
+        loop, mic = build(
+            config,
+            think,
+            on_state=lambda state: bridge.emit({"type": "state", "state": state}, keep=True),
+            on_transcript=lambda role, text: bridge.emit(
+                {"type": "transcript", "role": role, "text": text}
+            ),
+        )
+    except (RuntimeError, TTSError, ImportError) as exc:
+        print(f"Voice off: {exc}")
+        return None
+    threading.Thread(target=loop.run, args=(mic.frames(),), daemon=True).start()
+
+    def listen(message):
+        loop.wake_now()
+        return None
+
+    bridge.on("listen", listen)
+    return loop
+
+
+def run_serve(
+    config_arg: str | None,
+    port: int,
+    stop: threading.Event | None = None,
+    voice: bool = False,
+) -> int:
     """The core the orb talks to: agent, reminders and brief behind one local WebSocket."""
-    from rosie.bridge import Bridge, ChatHandlers, orb_notifier
+    from rosie.bridge import Bridge, BridgeError, ChatHandlers, orb_notifier
     from rosie.chat import build_session
 
     load_dotenv(Path(".env"))
@@ -244,13 +300,22 @@ def run_serve(config_arg: str | None, port: int, stop: threading.Event | None = 
         config, build_registry(config, reminders), context=context.build, ask_user=bridge.ask_user
     )
 
+    lock = threading.Lock()  # typed and spoken messages share one conversation
+
     def ask(text: str) -> str:
-        try:
-            return session.ask(text).text
-        except LLMError:
-            return "I can't reach my brain right now. Is Ollama running? Try `ollama serve`."
+        with lock:
+            try:
+                return session.ask(text).text
+            except LLMError:
+                return "I can't reach my brain right now. Is Ollama running? Try `ollama serve`."
 
     ChatHandlers(bridge, ask)
+    if not (voice and start_orb_voice(config, bridge, ask)):
+
+        def no_voice(message):
+            raise BridgeError("voice is off: start the core with `rosie serve --voice`")
+
+        bridge.on("listen", no_voice)
     bridge.emit({"type": "state", "state": "idle"}, keep=True)
     print(f"Rosie's core is up on ws://127.0.0.1:{port}. Ctrl+C to stop.")
     try:
@@ -324,6 +389,7 @@ def _parser() -> argparse.ArgumentParser:
     serve = sub.add_parser("serve", help="run Rosie's core for the orb UI")
     serve.add_argument("--config", help="path to rosie.yaml")
     serve.add_argument("--port", type=int, default=8765, help="WebSocket port (default 8765)")
+    serve.add_argument("--voice", action="store_true", help='also listen for "Hey Rosie"')
     review = sub.add_parser("review", help="nightly review in the terminal")
     review.add_argument("--config", help="path to rosie.yaml")
     telegram = sub.add_parser("telegram", help="answer on Telegram from your phone")
@@ -380,7 +446,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     if args.command == "telegram":
         return run_telegram(args.config)
     if args.command == "serve":
-        return run_serve(args.config, args.port)
+        return run_serve(args.config, args.port, voice=args.voice)
     if args.command == "vault":
         from rosie.vault import GitSync, ensure_layout
 

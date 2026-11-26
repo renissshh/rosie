@@ -6,7 +6,9 @@
 
 It is a state machine fed one 30 ms microphone frame at a time (`feed`), so it is
 tested with recorded or synthetic audio and no real microphone. Every state change
-is reported through `on_state`, which the orb UI (Sprint 5) will use for its colours.
+is reported through `on_state`, which the orb UI uses for its look, and every line of
+the conversation through `on_transcript`, which the Command Deck shows live.
+`wake_now()` starts listening without the wake word (a click on the orb, Ctrl+Space).
 
 Barge-in: while Rosie speaks, the microphone keeps listening. If you talk for about a
 fifth of a second she stops mid-sentence and listens. Speakers leak into the mic, so
@@ -66,6 +68,7 @@ class VoiceLoop:
         synthesize: Callable[[str], tuple[bytes, int]],
         player: Player,
         on_state: Callable[[State], None] = lambda state: None,
+        on_transcript: Callable[[str, str], None] = lambda role, text: None,
         listen_timeout_s: float = 6.0,
         barge_in_frames: int = 6,  # ~180 ms of speech
         barge_in_ratio: float = 6.0,
@@ -76,6 +79,8 @@ class VoiceLoop:
         self.synthesize = synthesize
         self.player = player
         self.on_state = on_state
+        self.on_transcript = on_transcript
+        self._wake_requested = False
         self.listen_timeout_frames = int(listen_timeout_s * 1000 // FRAME_MS)
         self.barge_in_frames = barge_in_frames
         self._barge_vad = EnergyVAD(ratio=barge_in_ratio, min_level=1500)
@@ -96,7 +101,19 @@ class VoiceLoop:
         self._waited = 0
         self._set("listening")
 
+    def wake_now(self) -> None:
+        """Listen from the next frame on, as if the wake word was heard. Thread-safe:
+        it only sets a flag that the microphone thread picks up."""
+        self._wake_requested = True
+
     def feed(self, frame: bytes) -> None:
+        if self._wake_requested:
+            self._wake_requested = False
+            if self.state in ("idle", "speaking"):
+                if self.state == "speaking":
+                    self.player.stop()
+                self._listen()
+                return
         if self.state == "idle":
             if self.wake.feed(frame):
                 request = getattr(self.wake, "request", None)
@@ -122,12 +139,14 @@ class VoiceLoop:
 
     def _respond(self, text: str) -> None:
         self.heard.append(text)
+        self.on_transcript("you", text)
         self._set("thinking")
         try:
             reply = self.think(text)
         except Exception:
             log.exception("thinking failed")
             reply = "Sorry, something went wrong on my side."
+        self.on_transcript("rosie", reply)
         pcm, rate = self.synthesize(reply)
         self._loud = 0
         self.player.start(pcm, rate)

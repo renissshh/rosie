@@ -43,6 +43,26 @@ CI runs the React tests on Ubuntu and the Rust tests on the Windows runner.
 | `skipTaskbar` | Rosie lives in the tray (Sprint 5), not the taskbar |
 | CSP `connect-src ws://127.0.0.1:8765` | The page may talk only to Rosie's own core on this laptop |
 
+## What the orb shows
+
+| Look | What you see | When |
+| --- | --- | --- |
+| Offline | Grey, no glow | The core isn't running or reachable (the orb keeps retrying) |
+| Idle | Slow breathing teal glow | Default |
+| Listening | Inner ring opens and pulses | "Hey Rosie", or a click on the orb |
+| Thinking | Three particles orbit the core | The agent is working on an answer |
+| Speaking | Core pulses quickly | Her voice is playing |
+| Nudge | Amber pulse | A reminder fired; click to dismiss, fades after a minute |
+| Focus | Dimmed | A study block is on: only urgent reminders show, the rest wait until it ends |
+
+When two apply, the one higher in the table (below Offline) wins: a reminder that fires
+while she is speaking pulses once she's done. The rules are in `ui/src/orb.ts` and are
+unit-tested. With "reduce animations" on in Windows, the looks are colour-only.
+
+Voice in the orb: start the core with `rosie serve --voice` (needs the `[voice]` extras,
+see docs/VOICE.md). Clicking the orb then works like saying "Hey Rosie", and also stops
+her mid-sentence. Without `--voice`, the orb works by typing (Command Deck).
+
 ## How the orb talks to Rosie's core
 
 The orb is only a face; everything Rosie knows lives in the Python core. They talk over
@@ -63,9 +83,11 @@ quits. The orb keeps reconnecting (1 s, 2 s, 4 s ... 10 s), so starting order ne
 | `hello {version}` | core -> orb | First message on every connection |
 | `ping` / `pong` | orb -> core -> orb | Is the core alive? |
 | `ask {text}` | orb -> core | A typed message; answered with `reply {text}` |
+| `listen` | orb -> core | Start listening now (click on the orb, Ctrl+Space) |
 | `state {state}` | core -> orb | `idle`, `listening`, `thinking` or `speaking` |
+| `focus {on, label}` | core -> orb | A study block started (`on: true`) or ended |
 | `transcript {role, text}` | core -> orb | One line of the conversation (`you` or `rosie`) |
-| `nudge {title, text}` | core -> orb | A reminder fired |
+| `nudge {title, text, urgent}` | core -> orb | A reminder fired (`urgent` ones get through focus) |
 | `confirm {id, question}` | core -> orb | The safety gate wants your yes/no |
 | `confirm_reply {id, allow}` | orb -> core | Your answer (only `true` means yes; 60 s silence = no) |
 | `error {text}` | core -> orb | A request could not be handled |
