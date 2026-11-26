@@ -9,8 +9,9 @@ from rosie.vault import SyncResult, sync_forever
 
 
 def kinds(config):
+    """Job kinds on this machine, without the vault backup (it runs everywhere)."""
     scheduler = Scheduler(config.data_dir / "index" / "scheduler.db", config.timezone)
-    return sorted(j.kind for j in scheduler.jobs())
+    return sorted(j.kind for j in scheduler.jobs() if j.kind != "vault_backup")
 
 
 def test_this_machine_owns_the_clock_by_default(tmp_path):

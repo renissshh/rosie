@@ -28,6 +28,7 @@ from datetime import date
 from pathlib import Path
 
 from rosie import __version__
+from rosie.backup import schedule_backups
 from rosie.brief import BRIEF_JOB, MorningBrief, build_brief, coach_notes
 from rosie.builtin_tools import register_builtin_tools
 from rosie.config import RosieConfig, load_config, load_dotenv
@@ -110,6 +111,9 @@ def start_reminders(
             ),
         )
         scheduler.ensure_daily(REVIEW_JOB, config.review_time)
+    schedule_backups(
+        scheduler, config.vault_dir, config.data_dir / "backups", lambda: today_in(config)
+    )
     stop = threading.Event()
     threading.Thread(target=scheduler.run_forever, args=(stop,), daemon=True).start()
     return reminders, stop
