@@ -75,3 +75,27 @@ jobs:
           docker run --rm rosie:ci rosie --version
           docker run --rm rosie:ci sh -c 'rosie server; test $? -eq 1'  # no Telegram token: explains, exits 1
           docker run --rm rosie:ci whoami | grep -qx rosie                # not root
+
+  windows-installer:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Run the installer twice (it must be safe to re-run)
+        shell: pwsh
+        run: |
+          $data = Join-Path $env:RUNNER_TEMP "Rosie"
+          ./scripts/install-windows.ps1 -DataDir $data -SkipDoctor
+          ./scripts/install-windows.ps1 -DataDir $data -SkipDoctor
+      - name: Check what it set up
+        shell: pwsh
+        run: |
+          $config = [Environment]::GetEnvironmentVariable("ROSIE_CONFIG", "User")
+          $core = [Environment]::GetEnvironmentVariable("ROSIE_CORE", "User")
+          if (-not (Test-Path $config)) { throw "ROSIE_CONFIG not set" }
+          & $core --version
+          $data = (Join-Path $env:RUNNER_TEMP "Rosie") -replace '\\', '/'
+          if (-not (Select-String -Path $config -SimpleMatch "data_dir: `"$data`"" -Quiet)) { throw "data_dir not written" }
+          if (-not (Test-Path (Join-Path $env:RUNNER_TEMP "Rosie/rosie-vault/tasks"))) { throw "vault not created" }

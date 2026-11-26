@@ -36,6 +36,23 @@ in step 4.
 
 ## 3. Get Rosie
 
+**Quick way**: clone, then let the installer do steps 3 to 5 (it never overwrites your
+config or `.env`, so it's safe to run again after an update):
+
+```powershell
+mkdir D:\Rosie
+git clone https://github.com/renissshh/rosie.git D:\Rosie\app
+cd D:\Rosie\app
+powershell -ExecutionPolicy Bypass -File scripts\install-windows.ps1
+# add -Voice for the microphone and voices, -Orb to build the orb app (needs Rust + Node)
+```
+
+It creates `.venv`, `config\rosie.yaml` (data on `D:\Rosie`) and `.env`, sets two user
+environment variables (`ROSIE_CONFIG`, `ROSIE_CORE`) so the orb can start Rosie at login,
+sets up rosie-vault and runs `rosie doctor`. No admin rights needed.
+
+**By hand**, if you prefer:
+
 ```powershell
 mkdir D:\Rosie
 cd D:\Rosie
