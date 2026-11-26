@@ -39,6 +39,7 @@ from rosie.reminders import Reminders, register_reminder_tools
 from rosie.review import REVIEW_JOB, NightlyReview, run_in_terminal
 from rosie.scheduler import Scheduler
 from rosie.search import NoteIndex, register_search_tool
+from rosie.study import StudyTimer, register_study_tools
 from rosie.tasks import TaskStore, register_task_tools
 from rosie.tools import ToolRegistry
 from rosie.vault_writer import VaultWriter
@@ -61,6 +62,7 @@ def build_registry(config: RosieConfig, reminders: Reminders | None = None) -> T
     register_memory_tools(registry, fact_store(config))
     register_task_tools(registry, task_store(config))
     register_search_tool(registry, note_index(config))
+    register_study_tools(registry, study_timer(config), config.subjects, lambda: today_in(config))
     if reminders is not None:
         register_reminder_tools(registry, reminders)
     return registry
@@ -109,6 +111,11 @@ def note_index(config: RosieConfig) -> NoteIndex:
 def vault_writer(config: RosieConfig) -> VaultWriter:
     forbidden = [config.user_vault_dir] if config.user_vault_dir else []
     return VaultWriter(config.vault_dir, forbidden=forbidden)
+
+
+def study_timer(config: RosieConfig) -> StudyTimer:
+    state = config.data_dir / "index" / "study_session.json"
+    return StudyTimer(state, vault_writer(config), lambda: now_in(config.timezone))
 
 
 def task_store(config: RosieConfig) -> TaskStore:

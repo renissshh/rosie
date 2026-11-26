@@ -94,6 +94,7 @@ class RosieConfig(BaseModel):
     voice: str = "kokoro-emma"  # see `rosie voices`
     day_blocks: list[DayBlock] = Field(default_factory=list)  # the orb's Day Ring
     countdowns: list[Countdown] = Field(default_factory=list)  # shown on the Command Deck
+    subjects: list[str] = Field(default_factory=list)  # for the study coach, e.g. [DBMS, OS]
 
     @model_validator(mode="after")
     def _derive_paths(self) -> RosieConfig:

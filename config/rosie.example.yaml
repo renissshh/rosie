@@ -48,3 +48,7 @@ day_blocks:
 # Dates to count down to on the Command Deck; the nearest one still ahead is shown.
 countdowns:
   - { label: "Semester exams", date: "2027-05-10" }
+
+# Your subjects, for the study coach ("how's my studying?"). A study-log line counts for
+# a subject when it mentions it: "DBMS normal forms 45m" -> DBMS.
+subjects: [DBMS, OS, Java, Maths]
