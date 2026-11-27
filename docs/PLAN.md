@@ -72,4 +72,5 @@ Status legend: `[x]` done, `[ ]` to do.
 - [ ] Identity: emblem SVG, icons, wordmark **[needs you]**: approve the Day Ring orb direction first (`docs/images/orb-looks.png`)
 - [x] Hardening: error recovery, vault backups, rate limits
 - [x] Windows installer script, user guide, demo GIF
-- [ ] Final tests, merge, tag v1.0
+- [x] Final tests: end to end in the terminal, on Telegram and in the browser; a whole day on a fake clock; release check (`docs/TESTING.md`)
+- [ ] Merge, tag v1.0, walkthrough doc (`docs/WALKTHROUGH-v1.0.md`)
