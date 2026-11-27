@@ -155,3 +155,54 @@ def test_main_check_says_ready(tmp_path: Path, capsys) -> None:
     (root / "CHANGELOG.md").write_text("## v0.5 opens at login\n", encoding="utf-8")
     assert release.main(["check"], root) == 0
     assert "Ready to tag v0.5 (0.5.0)." in capsys.readouterr().out
+
+
+# -- tags for sprint merges -----------------------------------------------------------
+
+
+def test_merge_tags_reads_sprint_merges_oldest_first() -> None:
+    log = "\n".join(
+        [
+            'c3 Merge dev into main: v1.0 "ship"',
+            "c2 Merge branch 'x' into dev",
+            'c1 Merge dev into main: v0.1 "talks in terminal"',
+            "c0 Merge dev into main: v0.1 again (same tag: the first merge keeps it)",
+        ]
+    )
+    assert release.merge_tags(log) == [
+        ("v0.1", "c0", "Merge dev into main: v0.1 again (same tag: the first merge keeps it)"),
+        ("v1.0", "c3", 'Merge dev into main: v1.0 "ship"'),
+    ]
+
+
+def test_merge_tags_ignores_lookalikes() -> None:
+    log = "a1 Merge dev into main: version two\nb2 Merge dev into main: v0.x\n"
+    assert release.merge_tags(log) == []
+
+
+def _git(repo: Path, *args: str) -> str:
+    return release.git(repo, "-c", "user.name=t", "-c", "user.email=t@t", *args)
+
+
+def test_tag_merges_in_a_real_repo(tmp_path: Path) -> None:
+    if shutil.which("git") is None:
+        pytest.skip("git not installed")
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    _git(repo, "init", "-q", "-b", "main")
+    _git(repo, "commit", "-q", "--allow-empty", "-m", "start")
+    for version in ["v0.1", "v0.2"]:
+        _git(repo, "checkout", "-q", "-b", "dev")
+        _git(repo, "commit", "-q", "--allow-empty", "-m", f"work for {version}")
+        _git(repo, "checkout", "-q", "main")
+        _git(repo, "merge", "-q", "--no-ff", "dev", "-m", f'Merge dev into main: {version} "x"')
+        _git(repo, "branch", "-q", "-D", "dev")
+    _git(repo, "tag", "-a", "v0.1", "HEAD~1", "-m", "made by hand")
+
+    # tag -a needs an identity; CI sets one in tag.yml, the test sets it for this repo
+    _git(repo, "config", "user.name", "t")
+    _git(repo, "config", "user.email", "t@t")
+    assert release.tag_merges(repo) == ["v0.2"]  # v0.1 already had one
+    assert release.tag_merges(repo) == []  # safe to run again
+    assert _git(repo, "rev-list", "-n1", "v0.2") == _git(repo, "rev-parse", "HEAD")
+    assert "made by hand" in _git(repo, "tag", "-n1", "v0.1")

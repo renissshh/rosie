@@ -68,6 +68,8 @@ including the browser end-to-end tests: [docs/TESTING.md](docs/TESTING.md).
 Releasing: `python scripts/release.py bump X.Y.Z` writes the version into all seven files
 that carry it, and `python scripts/release.py check` must say "Ready to tag" (versions agree,
 a [CHANGELOG.md](CHANGELOG.md) section exists, no broken doc links; for v1.0 the whole plan is done).
+Tags are made by CI: on every push to `main`, `.github/workflows/tag.yml` gives each
+`Merge dev into main: v0.N` commit its `v0.N` tag if it has none.
 
 Configuration: copy `config/rosie.example.yaml` to `config/rosie.yaml` and `.env.example`
 to `.env`. Secrets live only in `.env`.

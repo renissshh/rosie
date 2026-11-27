@@ -14,6 +14,7 @@ version that has no section here. Details for each release are in its walkthroug
 - `scripts/install-windows.ps1`, [user guide](docs/USER-GUIDE.md), demo GIF from the real orb.
 - Browser end-to-end tests of core + orb page ([TESTING.md](docs/TESTING.md)).
 - `scripts/release.py`: one version in every file, and a checklist before tagging.
+- CI tags every sprint merge on `main` (`.github/workflows/tag.yml`), including v0.1 to v0.5.
 
 ## v0.5 "opens at login" (2026-11-27)
 

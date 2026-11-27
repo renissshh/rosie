@@ -1,0 +1,29 @@
+name: tag
+
+# Every sprint merge on main ("Merge dev into main: v0.N ...") gets its tag v0.N, made
+# here with the repository's own token, so tags never depend on a manual push.
+# The logic lives in scripts/release.py (tag-merges) and is unit-tested.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write  # create and push tags
+
+jobs:
+  tag:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # the whole history, to find every merge and existing tag
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Tag sprint merges that have no tag
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          python scripts/release.py tag-merges --push

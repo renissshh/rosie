@@ -3,6 +3,7 @@
     python scripts/release.py versions        # where the version lives, and what it is
     python scripts/release.py bump 1.0.0      # write a new version into all of them
     python scripts/release.py check           # is this commit ready to tag?
+    python scripts/release.py tag-merges      # tag sprint merges on main that have no tag
 
 Rosie's version is written in seven files (Python package, orb page, Tauri shell and
 their lock files). `bump` changes all of them at once so they can't drift apart;
@@ -13,6 +14,10 @@ their lock files). `bump` changes all of them at once so they can't drift apart;
 - a relative link in a markdown file points at a file that doesn't exist;
 - docs/PLAN.md still has unchecked items (for the final 1.0 release only).
 
+`tag-merges` is what CI runs on every push to main (.github/workflows/tag.yml): each
+sprint merge commit, "Merge dev into main: v0.N ...", gets its tag `v0.N` if it has
+none yet, so tags never depend on someone pushing them by hand.
+
 Standard library only, so it runs before anything is installed. Dev tooling:
 nothing in Rosie imports it.
 """
@@ -21,6 +26,7 @@ from __future__ import annotations
 
 import argparse
 import re
+import subprocess
 import sys
 from dataclasses import dataclass
 from pathlib import Path
@@ -163,6 +169,47 @@ def check(root: Path = ROOT) -> list[str]:
     return problems
 
 
+# -- tags for sprint merges -----------------------------------------------------------
+
+MERGE_SUBJECT = re.compile(r"^Merge dev into main: (v\d+\.\d+(?:\.\d+)?)\b")
+
+
+def merge_tags(log: str) -> list[tuple[str, str, str]]:
+    """(tag, commit, subject) for each sprint merge in `git log --format='%H %s'` output,
+    oldest first. If two merges name the same tag, the first one keeps it."""
+    found: dict[str, tuple[str, str, str]] = {}
+    for line in reversed(log.strip().splitlines()):
+        commit, _, subject = line.partition(" ")
+        match = MERGE_SUBJECT.match(subject)
+        if match and match.group(1) not in found:
+            found[match.group(1)] = (match.group(1), commit, subject)
+    return list(found.values())
+
+
+def git(root: Path, *args: str) -> str:
+    result = subprocess.run(
+        ["git", *args], cwd=root, capture_output=True, text=True, encoding="utf-8"
+    )
+    if result.returncode != 0:
+        raise ReleaseError(f"git {' '.join(args)}: {result.stderr.strip()}")
+    return result.stdout
+
+
+def tag_merges(root: Path = ROOT, ref: str = "HEAD", push: bool = False) -> list[str]:
+    """Create the missing sprint-merge tags (annotated, message = the merge subject).
+    With push=True they are pushed to origin too. Returns the tags created."""
+    existing = set(git(root, "tag", "--list").split())
+    created = []
+    for tag, commit, subject in merge_tags(git(root, "log", "--merges", "--format=%H %s", ref)):
+        if tag in existing:
+            continue
+        git(root, "tag", "-a", tag, commit, "-m", subject)
+        created.append(tag)
+    if push and created:
+        git(root, "push", "origin", *[f"refs/tags/{tag}" for tag in created])
+    return created
+
+
 def main(argv: list[str] | None = None, root: Path = ROOT) -> int:
     parser = argparse.ArgumentParser(prog="release.py", description=__doc__.splitlines()[0])
     sub = parser.add_subparsers(dest="command", required=True)
@@ -170,6 +217,9 @@ def main(argv: list[str] | None = None, root: Path = ROOT) -> int:
     bump_cmd = sub.add_parser("bump", help="write a new version into every file")
     bump_cmd.add_argument("version")
     sub.add_parser("check", help="is this commit ready to tag?")
+    tags_cmd = sub.add_parser("tag-merges", help="tag sprint merges that have no tag yet")
+    tags_cmd.add_argument("--ref", default="HEAD", help="branch to look at (default HEAD)")
+    tags_cmd.add_argument("--push", action="store_true", help="also push the new tags")
     args = parser.parse_args(argv)
     try:
         if args.command == "versions":
@@ -179,6 +229,10 @@ def main(argv: list[str] | None = None, root: Path = ROOT) -> int:
         if args.command == "bump":
             for path in bump(args.version, root):
                 print(f"updated {path}")
+            return 0
+        if args.command == "tag-merges":
+            created = tag_merges(root, args.ref, args.push)
+            print("tagged " + ", ".join(created) if created else "every sprint merge has its tag")
             return 0
         problems = check(root)
     except ReleaseError as exc:
