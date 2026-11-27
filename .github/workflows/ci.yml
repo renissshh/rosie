@@ -42,6 +42,37 @@ jobs:
       - run: npm run typecheck
       - run: npm test
 
+  e2e:
+    # The real core + the built orb page in headless Chromium; only the model is fake.
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    env:
+      ROSIE_E2E: "1"  # a missing browser or page fails the job instead of skipping
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: ui/package-lock.json
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Build the orb page
+        working-directory: ui
+        run: |
+          npm ci
+          npm run build
+      - name: Install
+        run: |
+          python -m pip install -e ".[dev,e2e]"
+          python -m playwright install --with-deps chromium
+      - name: End-to-end tests
+        run: python -m pytest tests/e2e -v
+
   ui-shell:
     runs-on: windows-latest
     steps:

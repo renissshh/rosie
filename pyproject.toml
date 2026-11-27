@@ -21,6 +21,8 @@ dependencies = [
 [project.optional-dependencies]
 dev = ["pytest>=8.0", "ruff>=0.6", "numpy>=1.26", "av>=12"]
 # Microphone and speakers (Sprint 4). Not needed for chat, Telegram or tests.
+# Browser end-to-end tests (tests/e2e, docs/TESTING.md); then `python -m playwright install chromium`.
+e2e = ["playwright>=1.45"]
 voice = ["sounddevice>=0.4", "faster-whisper>=1.1", "sherpa-onnx>=1.10", "openwakeword>=0.6"]
 
 [project.scripts]
