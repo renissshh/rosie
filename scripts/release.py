@@ -84,8 +84,8 @@ def bump(new: str, root: Path = ROOT) -> list[str]:
     changed: list[str] = []
     for spot in SPOTS:
         path = root / spot.path
-        # newline="" keeps the file's own line endings (CRLF on a Windows checkout)
-        text = path.read_text(encoding="utf-8", newline="")
+        # bytes in, bytes out: keeps the file's own line endings (CRLF on a Windows checkout)
+        text = path.read_bytes().decode("utf-8")
         flat = text.replace("\r\n", "\n")
         match = spot.regex().search(flat)
         if match is None:
@@ -94,7 +94,7 @@ def bump(new: str, root: Path = ROOT) -> list[str]:
         if "\r\n" in text:
             flat = flat.replace("\n", "\r\n")
         if flat != text:
-            path.write_text(flat, encoding="utf-8", newline="")
+            path.write_bytes(flat.encode("utf-8"))
             if spot.path not in changed:
                 changed.append(spot.path)
     return changed
