@@ -108,9 +108,24 @@ def start_http(handler, port: int) -> http.server.ThreadingHTTPServer:
     return server
 
 
+def stop_http(server: http.server.ThreadingHTTPServer) -> None:
+    server.shutdown()  # stops serving...
+    server.server_close()  # ...and frees the port for the next test
+
+
 def port_free(port: int) -> bool:
     with socket.socket() as probe:
         return probe.connect_ex(("127.0.0.1", port)) != 0
+
+
+def wait_port_free(port: int, timeout_s: float = 10.0) -> bool:
+    """True once nothing listens on `port` (the last test's core may still be exiting)."""
+    deadline = time.monotonic() + timeout_s
+    while not port_free(port):
+        if time.monotonic() > deadline:
+            return False
+        time.sleep(0.2)
+    return True
 
 
 def wait_for_port(port: int, process: subprocess.Popen, timeout_s: float = 30.0) -> None:
@@ -181,21 +196,21 @@ def model_url() -> Iterator[str]:
     try:
         yield f"http://127.0.0.1:{model.server_address[1]}/v1"
     finally:
-        model.shutdown()
+        stop_http(model)
 
 
 @pytest.fixture
 def open_page():
     """Serves ui/dist on localhost:1420 and opens pages of it in headless Chromium."""
     for port in (CORE_PORT, PAGE_PORT):
-        if not port_free(port):
+        if not wait_port_free(port):
             skip(f"port {port} is busy (is Rosie running?)")
     page_server = start_http(QuietFiles, PAGE_PORT)
     with playwright_api.sync_playwright() as p:
         try:
             browser = p.chromium.launch()
         except Exception as exc:  # Playwright installed without its browser
-            page_server.shutdown()
+            stop_http(page_server)
             skip(f"Chromium not available: {exc}")
 
         def open_(path: str = "/", size: tuple[int, int] = (380, 640)):
@@ -207,7 +222,7 @@ def open_page():
             yield open_
         finally:
             browser.close()
-            page_server.shutdown()
+            stop_http(page_server)
 
 
 @pytest.fixture
