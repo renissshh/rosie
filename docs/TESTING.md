@@ -29,7 +29,12 @@ What they prove:
 - "add a task: ..." makes Rosie call `add_task`, the task is written to
   `rosie-vault/tasks/tasks.md`, shows in Top 3, and ticking it marks it `[x]` on disk;
 - the safety gate asks in the deck ("Rosie asks" card): **Deny** means nothing is
-  written to `memory/`, **Allow** saves the fact.
+  written to `memory/`, **Allow** saves the fact;
+- the orb opened before the core (the login race) shows grey, then turns idle by itself
+  once `rosie serve` starts;
+- with the model down (Ollama not running) the orb shows "unwell", the deck's "Needs a
+  hand" card says to run `ollama serve`, and a message gets the "can't reach my brain"
+  answer instead of an error.
 
 Run them on your laptop:
 

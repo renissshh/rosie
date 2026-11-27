@@ -15,7 +15,7 @@ Chromium is installed. CI runs it in the `e2e` job; see docs/TESTING.md.
 
 from __future__ import annotations
 
-import functools
+import contextlib
 import http.server
 import json
 import os
@@ -128,23 +128,26 @@ def wait_for_port(port: int, process: subprocess.Popen, timeout_s: float = 30.0)
 # -- fixtures -------------------------------------------------------------------------
 
 
-@pytest.fixture
-def core(tmp_path: Path) -> Iterator[Path]:
-    """`rosie serve` in a subprocess, with its data in tmp_path. Yields the vault."""
-    for port in (CORE_PORT, PAGE_PORT):
-        if not port_free(port):
-            skip(f"port {port} is busy (is Rosie running?)")
-    model = start_http(FakeModel, 0)
-    vault = tmp_path / "rosie-vault"
-    config = tmp_path / "rosie.yaml"
+class QuietFiles(http.server.SimpleHTTPRequestHandler):
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, directory=str(DIST), **kwargs)
+
+    def log_message(self, *args) -> None:
+        pass
+
+
+@contextlib.contextmanager
+def run_core(data: Path, model_url: str) -> Iterator[Path]:
+    """`rosie serve` in a subprocess, with its data in `data`. Yields the vault."""
+    config = data / "rosie.yaml"
     config.write_text(
         "\n".join(
             [
-                f'data_dir: "{tmp_path.as_posix()}"',
+                f'data_dir: "{data.as_posix()}"',
                 "llm:",
                 "  provider: ollama",
                 f'  model: "{MODEL}"',
-                f'  base_url: "http://127.0.0.1:{model.server_address[1]}/v1"',
+                f'  base_url: "{model_url}"',
                 "day_blocks: []",
             ]
         ),
@@ -154,7 +157,7 @@ def core(tmp_path: Path) -> Iterator[Path]:
     env["PYTHONUNBUFFERED"] = "1"
     process = subprocess.Popen(
         [sys.executable, "-m", "rosie", "serve", "--config", str(config)],
-        cwd=tmp_path,  # no stray .env from the repo
+        cwd=data,  # no stray .env from the repo
         env=env,
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
@@ -162,36 +165,63 @@ def core(tmp_path: Path) -> Iterator[Path]:
     )
     try:
         wait_for_port(CORE_PORT, process)
-        yield vault
+        yield data / "rosie-vault"
     finally:
         process.terminate()
         try:
             process.wait(timeout=10)
         except subprocess.TimeoutExpired:
             process.kill()
+
+
+@pytest.fixture
+def model_url() -> Iterator[str]:
+    """The fake model's OpenAI-compatible base URL."""
+    model = start_http(FakeModel, 0)
+    try:
+        yield f"http://127.0.0.1:{model.server_address[1]}/v1"
+    finally:
         model.shutdown()
 
 
 @pytest.fixture
-def deck(core: Path):
-    """The Command Deck page in headless Chromium, connected to the core."""
-    handler = functools.partial(http.server.SimpleHTTPRequestHandler, directory=str(DIST))
-    handler.log_message = lambda *args: None
-    page_server = start_http(handler, PAGE_PORT)
+def open_page():
+    """Serves ui/dist on localhost:1420 and opens pages of it in headless Chromium."""
+    for port in (CORE_PORT, PAGE_PORT):
+        if not port_free(port):
+            skip(f"port {port} is busy (is Rosie running?)")
+    page_server = start_http(QuietFiles, PAGE_PORT)
     with playwright_api.sync_playwright() as p:
         try:
             browser = p.chromium.launch()
         except Exception as exc:  # Playwright installed without its browser
             page_server.shutdown()
             skip(f"Chromium not available: {exc}")
-        page = browser.new_page(viewport={"width": 380, "height": 640})
-        page.goto(f"http://localhost:{PAGE_PORT}/#deck")
-        playwright_api.expect(page.get_by_text("online", exact=True)).to_be_visible(timeout=15000)
+
+        def open_(path: str = "/", size: tuple[int, int] = (380, 640)):
+            page = browser.new_page(viewport={"width": size[0], "height": size[1]})
+            page.goto(f"http://localhost:{PAGE_PORT}{path}")
+            return page
+
         try:
-            yield page
+            yield open_
         finally:
             browser.close()
             page_server.shutdown()
+
+
+@pytest.fixture
+def core(open_page, model_url: str, tmp_path: Path) -> Iterator[Path]:
+    with run_core(tmp_path, model_url) as vault:
+        yield vault
+
+
+@pytest.fixture
+def deck(core: Path, open_page):
+    """The Command Deck, connected to a core with the fake model."""
+    page = open_page("/#deck")
+    playwright_api.expect(page.get_by_text("online", exact=True)).to_be_visible(timeout=15000)
+    return page
 
 
 # -- the tests ------------------------------------------------------------------------
@@ -243,3 +273,31 @@ def test_safety_gate_allow_saves_the_fact(deck, core: Path) -> None:
     )
     saved = "".join(p.read_text(encoding="utf-8") for p in (core / "memory").glob("*.md"))
     assert "I train at 5 pm" in saved
+
+
+def test_orb_opened_before_the_core_comes_alive_when_it_starts(
+    open_page, model_url: str, tmp_path: Path
+) -> None:
+    """At login the orb often opens first: grey, then it reconnects on its own."""
+    orb = open_page("/", (200, 200)).locator(".orb")
+    playwright_api.expect(orb).to_have_attribute("data-look", "offline")
+    time.sleep(1.5)  # it has failed to connect at least once
+    with run_core(tmp_path, model_url):
+        playwright_api.expect(orb).to_have_attribute("data-look", "idle", timeout=20000)
+
+
+def test_model_down_shows_unwell_and_says_what_to_run(open_page, tmp_path: Path) -> None:
+    with socket.socket() as probe:  # a port nobody listens on: "Ollama is not running"
+        probe.bind(("127.0.0.1", 0))
+        dead = f"http://127.0.0.1:{probe.getsockname()[1]}/v1"
+    with run_core(tmp_path, dead):
+        orb = open_page("/", (200, 200)).locator(".orb")
+        playwright_api.expect(orb).to_have_attribute("data-look", "unwell", timeout=15000)
+
+        deck = open_page("/#deck")
+        problem = deck.get_by_label("Needs a hand")
+        playwright_api.expect(problem).to_contain_text("ollama serve", timeout=15000)
+        send(deck, "hello?")
+        playwright_api.expect(deck.get_by_label("Conversation")).to_contain_text(
+            "I can't reach my brain", timeout=15000
+        )
