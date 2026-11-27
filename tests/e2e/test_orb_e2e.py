@@ -17,23 +17,21 @@ from __future__ import annotations
 
 import contextlib
 import http.server
-import json
 import os
 import socket
 import subprocess
 import sys
-import threading
 import time
 from collections.abc import Iterator
 from pathlib import Path
 
 import pytest
+from rosie_fakes import clean_env, start_http, stop_http, write_config
 
 ROOT = Path(__file__).resolve().parents[2]
 DIST = ROOT / "ui" / "dist"
 CORE_PORT = 8765  # the page always dials this port (ui/src/protocol.ts)
 PAGE_PORT = 1420  # http://localhost:1420 is an origin the core accepts (Vite's port)
-MODEL = "fake:e2e"
 
 # CI sets ROSIE_E2E=1 so a missing piece fails the job instead of silently skipping.
 REQUIRED = os.environ.get("ROSIE_E2E") == "1"
@@ -51,66 +49,6 @@ except ImportError:
     skip("playwright not installed (pip install playwright)")
 if not (DIST / "index.html").is_file():
     skip("orb page not built (cd ui && npm run build)")
-
-
-# -- the fake model -------------------------------------------------------------------
-
-
-def fake_reply(messages: list[dict]) -> dict:
-    """What the model "says": a tool call for a few phrases, else plain text.
-
-    After a tool ran, it reports the tool's result, so the test can see it came back.
-    """
-    last = messages[-1]
-    if last["role"] == "tool":
-        return {"role": "assistant", "content": f"Done. ({last['content']})"}
-    text = str(last.get("content", ""))
-    for prefix, tool, key in (
-        ("add a task: ", "add_task", "title"),
-        ("remember: ", "remember_fact", "text"),
-    ):
-        if text.lower().startswith(prefix):
-            args = {key: text[len(prefix) :]}
-            call = {
-                "id": "call_1",
-                "type": "function",
-                "function": {"name": tool, "arguments": json.dumps(args)},
-            }
-            return {"role": "assistant", "content": None, "tool_calls": [call]}
-    return {"role": "assistant", "content": f"You said: {text}"}
-
-
-class FakeModel(http.server.BaseHTTPRequestHandler):
-    def _json(self, body: dict) -> None:
-        data = json.dumps(body).encode()
-        self.send_response(200)
-        self.send_header("Content-Type", "application/json")
-        self.send_header("Content-Length", str(len(data)))
-        self.end_headers()
-        self.wfile.write(data)
-
-    def do_GET(self) -> None:  # `rosie doctor`'s model check
-        self._json({"data": [{"id": MODEL}]})
-
-    def do_POST(self) -> None:
-        length = int(self.headers.get("Content-Length", 0))
-        request = json.loads(self.rfile.read(length))
-        message = fake_reply(request["messages"])
-        self._json({"model": MODEL, "choices": [{"message": message}]})
-
-    def log_message(self, *args) -> None:  # keep pytest output clean
-        pass
-
-
-def start_http(handler, port: int) -> http.server.ThreadingHTTPServer:
-    server = http.server.ThreadingHTTPServer(("127.0.0.1", port), handler)
-    threading.Thread(target=server.serve_forever, daemon=True).start()
-    return server
-
-
-def stop_http(server: http.server.ThreadingHTTPServer) -> None:
-    server.shutdown()  # stops serving...
-    server.server_close()  # ...and frees the port for the next test
 
 
 def port_free(port: int) -> bool:
@@ -154,26 +92,11 @@ class QuietFiles(http.server.SimpleHTTPRequestHandler):
 @contextlib.contextmanager
 def run_core(data: Path, model_url: str) -> Iterator[Path]:
     """`rosie serve` in a subprocess, with its data in `data`. Yields the vault."""
-    config = data / "rosie.yaml"
-    config.write_text(
-        "\n".join(
-            [
-                f'data_dir: "{data.as_posix()}"',
-                "llm:",
-                "  provider: ollama",
-                f'  model: "{MODEL}"',
-                f'  base_url: "{model_url}"',
-                "day_blocks: []",
-            ]
-        ),
-        encoding="utf-8",
-    )
-    env = {k: v for k, v in os.environ.items() if not k.startswith("ROSIE_")}
-    env["PYTHONUNBUFFERED"] = "1"
+    config = write_config(data, model_url)
     process = subprocess.Popen(
         [sys.executable, "-m", "rosie", "serve", "--config", str(config)],
         cwd=data,  # no stray .env from the repo
-        env=env,
+        env=clean_env(),
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
         text=True,
@@ -187,16 +110,6 @@ def run_core(data: Path, model_url: str) -> Iterator[Path]:
             process.wait(timeout=10)
         except subprocess.TimeoutExpired:
             process.kill()
-
-
-@pytest.fixture
-def model_url() -> Iterator[str]:
-    """The fake model's OpenAI-compatible base URL."""
-    model = start_http(FakeModel, 0)
-    try:
-        yield f"http://127.0.0.1:{model.server_address[1]}/v1"
-    finally:
-        stop_http(model)
 
 
 @pytest.fixture

@@ -7,7 +7,7 @@ Four layers, all run by CI (`.github/workflows/ci.yml`) on every push to `dev` a
 | Python unit tests | the core: agent, safety gate, vault, tasks, reminders, coaches, bridge... | `python -m pytest -q` | `test` (Ubuntu + Windows) |
 | UI tests | the React orb and Command Deck with a fake socket | `cd ui && npm test` | `ui` |
 | Rust tests | the Tauri shell (core start/stop, tray, autostart) | `cd ui/src-tauri && cargo test` | `ui-shell` (Windows) |
-| End-to-end | real `rosie serve` + real orb page + real browser | see below | `e2e` (Ubuntu + Windows) |
+| End-to-end | real `rosie` commands; real `rosie serve` + orb page + browser | see below | `test` (terminal), `e2e` (browser) |
 
 Two integration tests sit in the Python layer: `tests/test_whole_day.py` runs a whole day
 of the real schedule (brief, reminders and their follow-ups, nightly review, backups) on a
@@ -18,10 +18,22 @@ Before every commit: `ruff format . && ruff check . && python -m pytest -q`.
 
 ## End-to-end tests (`tests/e2e`)
 
-These start the real core with `rosie serve`, open the built Command Deck in headless
-Chromium, and click through it like you would. Only the language model is fake: a tiny
-OpenAI-compatible server in the test answers the way Ollama would, with scripted tool
-calls, so the tests are fast, free and the same every time.
+Both kinds share one fake model (`tests/e2e/rosie_fakes.py`): a tiny OpenAI-compatible
+server that answers the way Ollama would, with scripted tool calls, so the tests are
+fast, free and the same every time.
+
+### In the terminal (`test_cli_e2e.py`)
+
+The real `rosie` commands as separate processes on a fresh data folder, in the order a
+new user runs them: `rosie vault` creates the vault folders, `rosie doctor` says "All
+good", `rosie chat` (typed through stdin) uses tools and the safety gate reads your
+`n` / `y`, `rosie brief` lists the task chat added, and with the model down chat explains
+what to run and keeps going. No browser needed, so they run in the normal `test` job.
+
+### In the browser (`test_orb_e2e.py`)
+
+These start the real core with `rosie serve`, open the built orb page and Command Deck in
+headless Chromium, and click through them like you would.
 
 What they prove:
 
@@ -42,7 +54,7 @@ Run them on your laptop:
 cd ui; npm ci; npm run build; cd ..
 pip install -e ".[dev,e2e]"
 python -m playwright install chromium
-python -m pytest tests/e2e -v
+python -m pytest tests/e2e -v   # the terminal tests also run without these steps
 ```
 
 They use ports 8765 (the core) and 1420 (the page), so stop the orb first; if either
