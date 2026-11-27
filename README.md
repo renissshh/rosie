@@ -65,6 +65,10 @@ python -m pytest
 The orb UI lives in `ui/` (Tauri 2 + React): see [docs/UI.md](docs/UI.md). All test layers,
 including the browser end-to-end tests: [docs/TESTING.md](docs/TESTING.md).
 
+Releasing: `python scripts/release.py bump X.Y.Z` writes the version into all seven files
+that carry it, and `python scripts/release.py check` must say "Ready to tag" (versions agree,
+a [CHANGELOG.md](CHANGELOG.md) section exists, no broken doc links; for v1.0 the whole plan is done).
+
 Configuration: copy `config/rosie.example.yaml` to `config/rosie.yaml` and `.env.example`
 to `.env`. Secrets live only in `.env`.
 
