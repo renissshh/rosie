@@ -25,7 +25,7 @@ import argparse
 import os
 import threading
 from collections.abc import Callable, Mapping, Sequence
-from datetime import date
+from datetime import date, datetime
 from pathlib import Path
 
 from rosie import __version__
@@ -105,7 +105,23 @@ def start_reminders(
     `on_review` starts the review where it can be answered (Telegram); without it Rosie
     just reminds you to run `rosie review`.
     """
-    scheduler = Scheduler(config.data_dir / "index" / "scheduler.db", config.timezone)
+    reminders = build_schedule(config, notify, on_review)
+    stop = threading.Event()
+    threading.Thread(target=reminders.scheduler.run_forever, args=(stop,), daemon=True).start()
+    return reminders, stop
+
+
+def build_schedule(
+    config: RosieConfig,
+    notify,
+    on_review: Callable[[], None] | None = None,
+    now: Callable[[], datetime] | None = None,
+) -> Reminders:
+    """Everything Rosie does on a clock, wired but not started: reminders, morning brief,
+    nightly review and vault backups. `now` (UTC) lets tests run a whole day in a second
+    (tests/test_whole_day.py); safe to call on every start, nothing gets scheduled twice."""
+    db = config.data_dir / "index" / "scheduler.db"
+    scheduler = Scheduler(db, config.timezone, now) if now else Scheduler(db, config.timezone)
     reminders = Reminders(scheduler, notify, vault_writer(config), config.timezone)
     if config.clock == "server":
         # An always-on server sends the brief and review; this machine only keeps its
@@ -129,9 +145,7 @@ def start_reminders(
     schedule_backups(
         scheduler, config.vault_dir, config.data_dir / "backups", lambda: today_in(config)
     )
-    stop = threading.Event()
-    threading.Thread(target=scheduler.run_forever, args=(stop,), daemon=True).start()
-    return reminders, stop
+    return reminders
 
 
 def note_index(config: RosieConfig) -> NoteIndex:

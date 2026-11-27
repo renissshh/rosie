@@ -9,6 +9,11 @@ Four layers, all run by CI (`.github/workflows/ci.yml`) on every push to `dev` a
 | Rust tests | the Tauri shell (core start/stop, tray, autostart) | `cd ui/src-tauri && cargo test` | `ui-shell` (Windows) |
 | End-to-end | real `rosie serve` + real orb page + real browser | see below | `e2e` (Ubuntu + Windows) |
 
+Two integration tests sit in the Python layer: `tests/test_whole_day.py` runs a whole day
+of the real schedule (brief, reminders and their follow-ups, nightly review, backups) on a
+fake clock in about a second, including a laptop that slept all day and a core restarted
+three times; `tests/test_release.py` guards versions, the changelog and doc links.
+
 Before every commit: `ruff format . && ruff check . && python -m pytest -q`.
 
 ## End-to-end tests (`tests/e2e`)
