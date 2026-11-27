@@ -7,7 +7,7 @@ Four layers, all run by CI (`.github/workflows/ci.yml`) on every push to `dev` a
 | Python unit tests | the core: agent, safety gate, vault, tasks, reminders, coaches, bridge... | `python -m pytest -q` | `test` (Ubuntu + Windows) |
 | UI tests | the React orb and Command Deck with a fake socket | `cd ui && npm test` | `ui` |
 | Rust tests | the Tauri shell (core start/stop, tray, autostart) | `cd ui/src-tauri && cargo test` | `ui-shell` (Windows) |
-| End-to-end | real `rosie` commands; real `rosie serve` + orb page + browser | see below | `test` (terminal), `e2e` (browser) |
+| End-to-end | real `rosie` commands; Telegram wiring with a fake Bot API; real `rosie serve` + orb page + browser | see below | `test` (terminal, phone), `e2e` (browser) |
 
 Two integration tests sit in the Python layer: `tests/test_whole_day.py` runs a whole day
 of the real schedule (brief, reminders and their follow-ups, nightly review, backups) on a
@@ -29,6 +29,14 @@ new user runs them: `rosie vault` creates the vault folders, `rosie doctor` says
 good", `rosie chat` (typed through stdin) uses tools and the safety gate reads your
 `n` / `y`, `rosie brief` lists the task chat added, and with the model down chat explains
 what to run and keeps going. No browser needed, so they run in the normal `test` job.
+
+### On the phone (`test_phone_e2e.py`)
+
+The real `rosie telegram` wiring (the same as `rosie server`) against a fake Bot API
+plugged in as the HTTP transport, so no token is real and nothing leaves the machine:
+a message gets its reply, "add a task" lands in the vault, the safety gate asks
+"Reply yes or no." on the phone and honours both answers, and a stranger's chat gets
+silence. Runs in the normal `test` job.
 
 ### In the browser (`test_orb_e2e.py`)
 

@@ -12,7 +12,8 @@ version that has no section here. Details for each release are in its walkthroug
   rosie-vault shared through git ([SERVER.md](docs/SERVER.md)).
 - Hardening: daily vault zip backups (last 14), rate limits, core watchdog ([RELIABILITY.md](docs/RELIABILITY.md)).
 - `scripts/install-windows.ps1`, [user guide](docs/USER-GUIDE.md), demo GIF from the real orb.
-- Browser end-to-end tests of core + orb page ([TESTING.md](docs/TESTING.md)).
+- End-to-end tests: terminal commands, Telegram with a fake Bot API, and core + orb page in a
+  real browser; a whole day of the schedule on a fake clock ([TESTING.md](docs/TESTING.md)).
 - `scripts/release.py`: one version in every file, and a checklist before tagging.
 - CI tags every sprint merge on `main` (`.github/workflows/tag.yml`), including v0.1 to v0.5.
 

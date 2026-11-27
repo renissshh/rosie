@@ -228,15 +228,21 @@ def run_telegram(
     config_arg: str | None,
     environ: Mapping[str, str] | None = None,
     server: bool = False,
+    stop_when: threading.Event | None = None,
+    http=None,
 ) -> int:
     """`rosie telegram`; with server=True it is `rosie server`: the same bot, plus the
-    vault kept in sync with git, for an always-on machine (see docs/SERVER.md)."""
+    vault kept in sync with git, for an always-on machine (see docs/SERVER.md).
+
+    `stop_when` (stop from another thread) and `http` (an httpx.Client for the Bot API)
+    let tests run the whole bot against a fake Telegram (tests/e2e/test_phone_e2e.py).
+    """
     from rosie.chat import build_session
     from rosie.telegram import TelegramError, bot_from_env
 
     config = load_config(load_env(config_arg))
     try:
-        bot = bot_from_env(os.environ if environ is None else environ)
+        bot = bot_from_env(os.environ if environ is None else environ, http=http)
     except TelegramError as exc:
         print(f"Telegram is not set up: {exc}")
         return 1
@@ -252,6 +258,8 @@ def run_telegram(
     bot.on_message = lambda text: telegram_reply(text, review, session, limiter)
     add_voice_notes(bot, config)
     sync = start_vault_sync(config, stop) if server else None
+    if stop_when is not None:
+        threading.Thread(target=lambda: (stop_when.wait(), stop.set()), daemon=True).start()
     print(("Rosie server" if server else "Rosie") + " is listening on Telegram. Ctrl+C to stop.")
     try:
         bot.run_forever(stop)
